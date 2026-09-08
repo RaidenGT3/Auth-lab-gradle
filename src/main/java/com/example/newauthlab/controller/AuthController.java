@@ -36,30 +36,114 @@ public class AuthController {
 
 
     // =========================
-    // 認証選択処理
+    // 認証方式選択処理
     // =========================
 
     @PostMapping("/auth/select")
     public String selectAuth(
-            @RequestParam String authStage,
-            @RequestParam String authFactor,
-            Model model) {
+            @RequestParam String authType) {
 
-        // 選択された認証段階
-        model.addAttribute("authStage", authStage);
+        switch (authType) {
 
-        // 選択された認証要素
-        model.addAttribute("authFactor", authFactor);
+            // 一段階認証
+            case "one-stage":
+                return "redirect:/login/one-stage";
 
 
-        // 現時点では選択内容を確認するため、
-        // ログイン画面へ移動する
-        return "login";
+            // 二段階認証
+            case "two-stage":
+                return "redirect:/login/two-stage";
+
+
+            // 三段階認証
+            case "three-stage":
+                return "redirect:/login/three-stage";
+
+
+            // 一要素認証
+            case "one-factor":
+                return "redirect:/login/one-factor";
+
+
+            // 二要素認証
+            case "two-factor":
+                return "redirect:/login/two-factor";
+
+
+            // 三要素認証
+            case "three-factor":
+                return "redirect:/login/three-factor";
+
+
+            // 想定外の値が送られた場合
+            default:
+                return "redirect:/auth";
+        }
     }
 
 
     // =========================
-    // ログイン画面
+    // 一段階認証ログイン画面
+    // =========================
+
+    @GetMapping("/login/one-stage")
+    public String oneStageLogin() {
+        return "login/one-stage";
+    }
+
+
+    // =========================
+    // 二段階認証ログイン画面
+    // =========================
+
+    @GetMapping("/login/two-stage")
+    public String twoStageLogin() {
+        return "login/two-stage";
+    }
+
+
+    // =========================
+    // 三段階認証ログイン画面
+    // =========================
+
+    @GetMapping("/login/three-stage")
+    public String threeStageLogin() {
+        return "login/three-stage";
+    }
+
+
+    // =========================
+    // 一要素認証ログイン画面
+    // =========================
+
+    @GetMapping("/login/one-factor")
+    public String oneFactorLogin() {
+        return "login/one-factor";
+    }
+
+
+    // =========================
+    // 二要素認証ログイン画面
+    // =========================
+
+    @GetMapping("/login/two-factor")
+    public String twoFactorLogin() {
+        return "login/two-factor";
+    }
+
+
+    // =========================
+    // 三要素認証ログイン画面
+    // =========================
+
+    @GetMapping("/login/three-factor")
+    public String threeFactorLogin() {
+        return "login/three-factor";
+    }
+
+
+    // =========================
+    // 通常ログイン画面
     // =========================
 
     @GetMapping("/login")

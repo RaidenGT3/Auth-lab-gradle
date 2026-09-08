@@ -23,6 +23,7 @@
             align-items: center;
 
             background-color: #f5f5f5;
+
             font-family: Arial, "Noto Sans JP", sans-serif;
         }
 
@@ -35,8 +36,7 @@
 
             border-radius: 12px;
 
-            box-shadow:
-                0 4px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         h1 {
@@ -48,22 +48,11 @@
             font-size: 26px;
         }
 
-        .section {
-            margin-bottom: 25px;
-        }
-
-        .section-title {
-            margin-bottom: 12px;
-
-            font-size: 18px;
-            font-weight: bold;
-        }
-
         .auth-option {
             display: block;
 
-            margin-bottom: 10px;
-            padding: 15px;
+            margin-bottom: 12px;
+            padding: 16px;
 
             border: 1px solid #ddd;
             border-radius: 8px;
@@ -82,7 +71,7 @@
         .button {
             width: 100%;
 
-            margin-top: 10px;
+            margin-top: 15px;
             padding: 13px;
 
             border: none;
@@ -111,110 +100,97 @@
 
     <h1>認証選択画面</h1>
 
-
     <form action="/auth/select" method="post">
 
+        <!-- 一段階認証 -->
 
-        <!-- 認証段階 -->
+        <label class="auth-option">
 
-        <div class="section">
+            <input
+                type="radio"
+                name="authType"
+                value="one-stage"
+                required
+            >
 
-            <div class="section-title">
-                認証段階を選択
-            </div>
+            一段階認証
 
-
-            <label class="auth-option">
-
-                <input
-                    type="radio"
-                    name="authStage"
-                    value="one-stage"
-                    required
-                >
-
-                一段階認証
-
-            </label>
+        </label>
 
 
-            <label class="auth-option">
+        <!-- 二段階認証 -->
 
-                <input
-                    type="radio"
-                    name="authStage"
-                    value="two-stage"
-                >
+        <label class="auth-option">
 
-                二段階認証
+            <input
+                type="radio"
+                name="authType"
+                value="two-stage"
+            >
 
-            </label>
+            二段階認証
 
-
-            <label class="auth-option">
-
-                <input
-                    type="radio"
-                    name="authStage"
-                    value="three-stage"
-                >
-
-                三段階認証
-
-            </label>
-
-        </div>
+        </label>
 
 
-        <!-- 認証要素 -->
+        <!-- 三段階認証 -->
 
-        <div class="section">
+        <label class="auth-option">
 
-            <div class="section-title">
-                認証要素を選択
-            </div>
+            <input
+                type="radio"
+                name="authType"
+                value="three-stage"
+            >
 
+            三段階認証
 
-            <label class="auth-option">
-
-                <input
-                    type="radio"
-                    name="authFactor"
-                    value="one-factor"
-                    required
-                >
-
-                一要素認証
-
-            </label>
+        </label>
 
 
-            <label class="auth-option">
+        <!-- 一要素認証 -->
 
-                <input
-                    type="radio"
-                    name="authFactor"
-                    value="two-factor"
-                >
+        <label class="auth-option">
 
-                二要素認証
+            <input
+                type="radio"
+                name="authType"
+                value="one-factor"
+            >
 
-            </label>
+            一要素認証
+
+        </label>
 
 
-            <label class="auth-option">
+        <!-- 二要素認証 -->
 
-                <input
-                    type="radio"
-                    name="authFactor"
-                    value="three-factor"
-                >
+        <label class="auth-option">
 
-                三要素認証
+            <input
+                type="radio"
+                name="authType"
+                value="two-factor"
+            >
 
-            </label>
+            二要素認証
 
-        </div>
+        </label>
+
+
+        <!-- 三要素認証 -->
+
+        <label class="auth-option">
+
+            <input
+                type="radio"
+                name="authType"
+                value="three-factor"
+            >
+
+            三要素認証
+
+        </label>
 
 
         <button
@@ -223,7 +199,6 @@
         >
             次へ
         </button>
-
 
     </form>
 
