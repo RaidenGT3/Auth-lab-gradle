@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>認証選択画面</title>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>認証選択画面</h1>
+
+        <button class="auth-button"
+                onclick="location.href='/login/one-stage'">
+            一段階認証
+        </button>
+
+        <button class="auth-button"
+                onclick="location.href='/login/two-stage'">
+            二段階認証
+        </button>
+
+        <button class="auth-button"
+                onclick="location.href='/login/three-stage'">
+            三段階認証
+        </button>
+		
+		<button class="auth-button"
+		        onclick="location.href='/login/one-factor'">
+		    一要素認証
+		</button>
+
+		<button class="auth-button"
+		        onclick="location.href='/login/two-factor'">
+		    二要素認証
+		</button>
+
+		<button class="auth-button"
+		        onclick="location.href='/login/three-factor'">
+		    三要素認証
+		</button>
+
+    </div>
+
+</body>
+</html>
