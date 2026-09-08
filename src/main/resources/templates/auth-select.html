@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>認証選択画面</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            background-color: #f5f5f5;
+            font-family: Arial, "Noto Sans JP", sans-serif;
+        }
+
+        .container {
+            width: 450px;
+
+            padding: 40px;
+
+            background-color: white;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 30px;
+
+            text-align: center;
+
+            font-size: 26px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            margin-bottom: 12px;
+
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .auth-option {
+            display: block;
+
+            margin-bottom: 10px;
+            padding: 15px;
+
+            border: 1px solid #ddd;
+            border-radius: 8px;
+
+            cursor: pointer;
+        }
+
+        .auth-option:hover {
+            background-color: #f7f7f7;
+        }
+
+        .auth-option input {
+            margin-right: 10px;
+        }
+
+        .button {
+            width: 100%;
+
+            margin-top: 10px;
+            padding: 13px;
+
+            border: none;
+            border-radius: 6px;
+
+            background-color: #333;
+            color: white;
+
+            font-size: 16px;
+
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #555;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <h1>認証選択画面</h1>
+
+
+    <form action="/auth/select" method="post">
+
+
+        <!-- 認証段階 -->
+
+        <div class="section">
+
+            <div class="section-title">
+                認証段階を選択
+            </div>
+
+
+            <label class="auth-option">
+
+                <input
+                    type="radio"
+                    name="authStage"
+                    value="one-stage"
+                    required
+                >
+
+                一段階認証
+
+            </label>
+
+
+            <label class="auth-option">
+
+                <input
+                    type="radio"
+                    name="authStage"
+                    value="two-stage"
+                >
+
+                二段階認証
+
+            </label>
+
+
+            <label class="auth-option">
+
+                <input
+                    type="radio"
+                    name="authStage"
+                    value="three-stage"
+                >
+
+                三段階認証
+
+            </label>
+
+        </div>
+
+
+        <!-- 認証要素 -->
+
+        <div class="section">
+
+            <div class="section-title">
+                認証要素を選択
+            </div>
+
+
+            <label class="auth-option">
+
+                <input
+                    type="radio"
+                    name="authFactor"
+                    value="one-factor"
+                    required
+                >
+
+                一要素認証
+
+            </label>
+
+
+            <label class="auth-option">
+
+                <input
+                    type="radio"
+                    name="authFactor"
+                    value="two-factor"
+                >
+
+                二要素認証
+
+            </label>
+
+
+            <label class="auth-option">
+
+                <input
+                    type="radio"
+                    name="authFactor"
+                    value="three-factor"
+                >
+
+                三要素認証
+
+            </label>
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="button"
+        >
+            次へ
+        </button>
+
+
+    </form>
+
+</div>
+
+</body>
+
+</html>
