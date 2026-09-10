@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>認証コード入力</title>
+</head>
+
+<body>
+
+    <h1>認証コード入力</h1>
+
+    <p>
+        メールに届いた6桁の認証コードを入力してください。
+    </p>
+
+    <form th:action="@{/verify-otp}" method="post">
+
+        <div>
+            <label for="otp">認証コード</label>
+            <input
+                type="text"
+                id="otp"
+                name="otp"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                placeholder="123456"
+                required>
+        </div>
+
+        <br>
+
+        <button type="submit">
+            認証する
+        </button>
+
+    </form>
+
+    <p th:if="${error}" th:text="${error}"></p>
+
+</body>
+
+</html>
