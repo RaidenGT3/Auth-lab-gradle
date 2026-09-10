@@ -25,6 +25,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	//これ追加したやつ↓
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	
+	// メール送信用
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'

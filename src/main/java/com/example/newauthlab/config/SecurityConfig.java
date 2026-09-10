@@ -20,15 +20,12 @@ public class SecurityConfig {
             throws Exception {
 
         http
+            .csrf(csrf -> csrf.disable())
+
             .authorizeHttpRequests(auth -> auth
-            		.requestMatchers("/auth", "/auth/select", "/login", "/register").permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()
             )
-            .formLogin(form -> form
-                .loginPage("/login")
-                .defaultSuccessUrl("/", true)
-                .permitAll()
-            )
+
             .logout(logout -> logout
                 .logoutSuccessUrl("/login")
                 .permitAll()

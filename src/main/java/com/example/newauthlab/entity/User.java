@@ -20,6 +20,9 @@ public class User {
 
     @Column(nullable = false, length = 255)
     private String password;
+    
+    // メールアドレス
+    @Column(nullable = false, unique = true, length = 255) private String email;
 
     public Long getId() {
         return id;
@@ -39,5 +42,16 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+    
+    // =========================
+    // email
+    // =========================
+    public String getEmail() {
+    	return email;
+    }
+    
+    public void setEmail(String email) {
+    	this.email = email;
     }
 }
