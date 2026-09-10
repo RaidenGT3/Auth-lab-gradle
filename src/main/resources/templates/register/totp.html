@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Google Authenticator登録</title>
+</head>
+
+<body>
+
+<h1>Google Authenticator登録</h1>
+
+<p>
+    ユーザー「<span th:text="${username}"></span>」の
+    Google Authenticatorを設定します。
+</p>
+
+<h2>① QRコードを読み取る</h2>
+
+<p>
+    Google Authenticatorをスマートフォンで開き、
+    QRコードを読み取ってください。
+</p>
+
+<div>
+    <img src="/register/totp/qr"
+         alt="Google Authenticator登録用QRコード"
+         width="300"
+         height="300">
+</div>
+
+<h2>② 認証コードを入力</h2>
+
+<p>
+    Google Authenticatorに表示された
+    6桁の認証コードを入力してください。
+</p>
+
+<form action="/register/totp/verify" method="post">
+
+    <div>
+        <label>認証コード</label>
+
+        <input type="text"
+               name="code"
+               inputmode="numeric"
+               pattern="[0-9]{6}"
+               maxlength="6"
+               required>
+    </div>
+
+    <br>
+
+    <button type="submit">
+        登録を完了する
+    </button>
+
+</form>
+
+<div th:if="${error}">
+    <p th:text="${error}"></p>
+</div>
+
+<h2>QRコードを読み取れない場合</h2>
+
+<p>
+    以下の秘密鍵をGoogle Authenticatorに手動で入力できます。
+</p>
+
+<p>
+    <strong th:text="${secretKey}"></strong>
+</p>
+
+</body>
+
+</html>

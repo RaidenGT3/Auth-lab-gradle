@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>三段階認証 - メール認証</title>
+</head>
+
+<body>
+
+<h1>三段階認証</h1>
+
+<h2>② メール認証</h2>
+
+<p>
+    登録されているメールアドレスに認証コードを送信しました。
+</p>
+
+<p>
+    メールに記載されている6桁の認証コードを入力してください。
+</p>
+
+<form action="/login/three-stage/code" method="post">
+
+    <div>
+        <label>認証コード</label>
+
+        <input type="text"
+               name="code"
+               inputmode="numeric"
+               pattern="[0-9]{6}"
+               maxlength="6"
+               required>
+    </div>
+
+    <br>
+
+    <button type="submit">
+        次へ
+    </button>
+
+</form>
+
+<div th:if="${error}">
+    <p th:text="${error}"></p>
+</div>
+
+<p>
+    <a href="/login/three-stage">
+        三段階認証の最初に戻る
+    </a>
+</p>
+
+</body>
+
+</html>

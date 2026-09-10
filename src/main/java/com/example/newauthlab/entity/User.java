@@ -20,9 +20,14 @@ public class User {
 
     @Column(nullable = false, length = 255)
     private String password;
-    
+
     // メールアドレス
-    @Column(nullable = false, unique = true, length = 255) private String email;
+    @Column(nullable = false, unique = true, length = 255)
+    private String email;
+
+    // Google Authenticator用の秘密鍵
+    @Column(length = 100)
+    private String totpSecret;
 
     public Long getId() {
         return id;
@@ -43,15 +48,26 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
-    
+
     // =========================
     // email
     // =========================
     public String getEmail() {
-    	return email;
+        return email;
     }
-    
+
     public void setEmail(String email) {
-    	this.email = email;
+        this.email = email;
+    }
+
+    // =========================
+    // TOTP
+    // =========================
+    public String getTotpSecret() {
+        return totpSecret;
+    }
+
+    public void setTotpSecret(String totpSecret) {
+        this.totpSecret = totpSecret;
     }
 }
