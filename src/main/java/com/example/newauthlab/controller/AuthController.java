@@ -29,7 +29,7 @@ public class AuthController {
     // 認証選択画面
     // =========================
 
-    @GetMapping("/auth")
+    @GetMapping({"/","/auth"})
     public String authSelect() {
         return "auth-select";
     }
