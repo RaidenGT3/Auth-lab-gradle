@@ -131,8 +131,19 @@ document
             /*
              * ④ PublicKeyCredentialCreationOptions
              */
-            const publicKey =
-                options.publicKey || options;
+			const publicKey =
+			    options.publicKey || options;
+
+
+			/*
+			 * Windows Helloを使用する
+			 * Platform Authenticatorを明示的に指定
+			 */
+			publicKey.authenticatorSelection = {
+			    authenticatorAttachment: "platform",
+			    residentKey: "required",
+			    userVerification: "required"
+			};
 
 
             /*
