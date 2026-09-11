@@ -88,7 +88,7 @@ public class AuthController {
 
     @GetMapping("/login/one-stage")
     public String oneStageLogin() {
-        return "login/one-stage";
+        return "login";
     }
 
 
