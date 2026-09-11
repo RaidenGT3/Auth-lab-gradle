@@ -939,6 +939,273 @@ public class AuthController {
     public String oneFactorLogin() {
         return "login/one-factor";
     }
+    
+    @PostMapping("/login/one-factor/select")
+    public String selectOneFactor(
+            @RequestParam String factor) {
+
+        switch (factor) {
+
+            case "password":
+                return "redirect:/login/one-factor/password";
+
+            case "email":
+                return "redirect:/login/one-factor/email";
+
+            case "passkey":
+                return "redirect:/login/one-factor/passkey";
+
+            default:
+                return "redirect:/login/one-factor";
+        }
+    }
+    
+	 // =========================
+	 // 一要素認証 - Password認証
+	 // =========================
+	
+	 @PostMapping("/login/one-factor/password")
+	 public String oneFactorPasswordLogin(
+	         @RequestParam String username,
+	         @RequestParam String password,
+	         HttpServletRequest request,
+	         HttpServletResponse response,
+	         Model model) {
+	
+	     Optional<User> optionalUser =
+	             userRepository.findByUsername(username);
+	
+	     // ユーザーが存在しない
+	     if (optionalUser.isEmpty()) {
+	
+	         model.addAttribute(
+	                 "error",
+	                 "ユーザー名またはパスワードが正しくありません"
+	         );
+	
+	         return "login/one-factor-password";
+	     }
+	
+	     User user = optionalUser.get();
+	
+	     // パスワード確認
+	     if (!passwordEncoder.matches(
+	             password,
+	             user.getPassword())) {
+	
+	         model.addAttribute(
+	                 "error",
+	                 "ユーザー名またはパスワードが正しくありません"
+	         );
+	
+	         return "login/one-factor-password";
+	     }
+	
+	     // =========================
+	     // 認証成功
+	     // =========================
+	
+	     Authentication authentication =
+	             new UsernamePasswordAuthenticationToken(
+	                     user.getUsername(),
+	                     null,
+	                     java.util.Collections.emptyList()
+	             );
+	
+	     SecurityContext context =
+	             SecurityContextHolder.createEmptyContext();
+	
+	     context.setAuthentication(authentication);
+	
+	     SecurityContextHolder.setContext(context);
+	
+	     securityContextRepository.saveContext(
+	             context,
+	             request,
+	             response
+	     );
+	
+	     return "redirect:/";
+	 }
+	 
+	// =========================
+	// 一要素認証 - Email OTP送信
+	// =========================
+
+	@PostMapping("/login/one-factor/email")
+	public String oneFactorEmailLogin(
+	        @RequestParam String username,
+	        HttpSession session,
+	        Model model) {
+
+	    Optional<User> optionalUser =
+	            userRepository.findByUsername(username);
+
+	    // ユーザーが存在しない
+	    if (optionalUser.isEmpty()) {
+
+	        model.addAttribute(
+	                "error",
+	                "ユーザー名が正しくありません"
+	        );
+
+	        return "login/one-factor-email";
+	    }
+
+	    User user = optionalUser.get();
+
+	    // メールアドレスが登録されていない
+	    if (user.getEmail() == null ||
+	            user.getEmail().isBlank()) {
+
+	        model.addAttribute(
+	                "error",
+	                "メールアドレスが登録されていません"
+	        );
+
+	        return "login/one-factor-email";
+	    }
+
+	    // 6桁の認証コードを生成
+	    String code =
+	            mailService.generateCode();
+
+	    // セッションに保存
+	    verificationCodeService.saveCode(
+	            session,
+	            user.getEmail(),
+	            code
+	    );
+
+	    // 一要素認証用のユーザー名を保存
+	    session.setAttribute(
+	            "oneFactorEmailUsername",
+	            user.getUsername()
+	    );
+
+	    // メール送信
+	    mailService.sendVerificationCode(
+	            user.getEmail(),
+	            code
+	    );
+
+	    return "redirect:/login/one-factor/email/code";
+	}
+	
+	// =========================
+	// 一要素認証 - Email OTP検証
+	// =========================
+
+	@PostMapping("/login/one-factor/email/code")
+	public String verifyOneFactorEmailCode(
+	        @RequestParam String code,
+	        HttpSession session,
+	        HttpServletRequest request,
+	        HttpServletResponse response,
+	        Model model) {
+
+	    // 保存されている認証コードを確認
+	    String savedCode =
+	            verificationCodeService.getCode(session);
+
+	    if (savedCode == null) {
+
+	        model.addAttribute(
+	                "error",
+	                "認証コードの有効期限が切れています。もう一度ログインしてください"
+	        );
+
+	        return "login/one-factor-email-code";
+	    }
+
+	    // 認証コードを検証
+	    if (!verificationCodeService.verifyCode(
+	            session,
+	            code)) {
+
+	        model.addAttribute(
+	                "error",
+	                "認証コードが正しくありません"
+	        );
+
+	        return "login/one-factor-email-code";
+	    }
+
+	    // 一要素認証用のユーザー名を取得
+	    Object usernameObject =
+	            session.getAttribute(
+	                    "oneFactorEmailUsername"
+	            );
+
+	    if (usernameObject == null) {
+
+	        verificationCodeService.clearCode(session);
+
+	        return "redirect:/login/one-factor/email";
+	    }
+
+	    String username =
+	            usernameObject.toString();
+
+	    // ユーザーをDBから取得
+	    Optional<User> optionalUser =
+	            userRepository.findByUsername(username);
+
+	    if (optionalUser.isEmpty()) {
+
+	        verificationCodeService.clearCode(session);
+
+	        session.removeAttribute(
+	                "oneFactorEmailUsername"
+	        );
+
+	        return "redirect:/login/one-factor/email";
+	    }
+
+	    User user = optionalUser.get();
+
+	    // =========================
+	    // 認証成功
+	    // =========================
+
+	    Authentication authentication =
+	            new UsernamePasswordAuthenticationToken(
+	                    user.getUsername(),
+	                    null,
+	                    java.util.Collections.emptyList()
+	            );
+
+	    SecurityContext context =
+	            SecurityContextHolder.createEmptyContext();
+
+	    context.setAuthentication(authentication);
+
+	    SecurityContextHolder.setContext(context);
+
+	    securityContextRepository.saveContext(
+	            context,
+	            request,
+	            response
+	    );
+
+	    // 認証コードと一時情報を削除
+	    verificationCodeService.clearCode(session);
+
+	    session.removeAttribute(
+	            "oneFactorEmailUsername"
+	    );
+
+	    return "redirect:/";
+	}
+	
+	// =========================
+	// Passkey登録画面
+	// =========================
+
+	@GetMapping("/register/passkey")
+	public String registerPasskey() {
+	    return "register-passkey";
+	}
 
 
     // =========================
@@ -1121,88 +1388,132 @@ public class AuthController {
 	// Google Authenticator登録確認
 	// =========================
 
-	@PostMapping("/register/totp/verify")
-	public String verifyRegisterTotp(
-	        @RequestParam int code,
-	        HttpSession session,
-	        Model model) {
+	 
+	 @PostMapping("/register/totp/verify")
+	 public String verifyRegisterTotp(
+	         @RequestParam String code,
+	         HttpSession session,
+	         HttpServletRequest request,
+	         HttpServletResponse response,
+	         Model model) {
 
-	    Object usernameObject =
-	            session.getAttribute("totpRegisterUsername");
+	     Object usernameObject =
+	             session.getAttribute("totpRegisterUsername");
 
-	    if (usernameObject == null) {
-	        return "redirect:/register";
-	    }
+	     if (usernameObject == null) {
 
-	    String username =
-	            usernameObject.toString();
+	         model.addAttribute(
+	                 "error",
+	                 "登録情報が見つかりません。もう一度登録してください"
+	         );
 
-	    Optional<User> optionalUser =
-	            userRepository.findByUsername(username);
+	         return "redirect:/register";
+	     }
 
-	    if (optionalUser.isEmpty()) {
-	        return "redirect:/register";
-	    }
+	     String username =
+	             usernameObject.toString();
 
-	    User user = optionalUser.get();
+	     Optional<User> optionalUser =
+	             userRepository.findByUsername(username);
+
+	     if (optionalUser.isEmpty()) {
+
+	         model.addAttribute(
+	                 "error",
+	                 "ユーザーが見つかりません"
+	         );
+
+	         return "redirect:/register";
+	     }
+
+	     User user =
+	             optionalUser.get();
+
+	     String codeString =
+	             String.valueOf(code);
+
+	     int totpCode;
+
+	     try {
+
+	         totpCode =
+	                 Integer.parseInt(codeString);
+
+	     } catch (NumberFormatException e) {
+
+	         model.addAttribute(
+	                 "error",
+	                 "認証コードは数字6桁で入力してください"
+	         );
+
+	         return "register-totp";
+	     }
+
+	     boolean verified =
+	             totpService.verifyCode(
+	                     user.getTotpSecret(),
+	                     totpCode
+	             );
+
+	     if (!verified) {
+
+	         model.addAttribute(
+	                 "error",
+	                 "認証コードが正しくありません"
+	         );
+
+	         return "register-totp";
+	     }
 
 
-	    // =========================
-	    // TOTPコードを確認
-	    // =========================
+	     /*
+	      * TOTP認証成功
+	      *
+	      * Passkey登録では、
+	      * Spring Securityが「現在認証されているユーザー」
+	      * を必要とするため、ここで一時的に認証状態にする。
+	      */
 
-	    boolean verified =
-	            totpService.verifyCode(
-	                    user.getTotpSecret(),
-	                    code
-	            );
+	     Authentication authentication =
+	             new UsernamePasswordAuthenticationToken(
+	                     user.getUsername(),
+	                     null,
+	                     java.util.Collections.emptyList()
+	             );
 
+	     SecurityContext context =
+	             SecurityContextHolder.createEmptyContext();
 
-	    if (!verified) {
+	     context.setAuthentication(authentication);
 
-	        model.addAttribute(
-	                "error",
-	                "認証コードが正しくありません"
-	        );
+	     SecurityContextHolder.setContext(context);
 
-	        model.addAttribute(
-	                "username",
-	                user.getUsername()
-	        );
-
-	        model.addAttribute(
-	                "secretKey",
-	                user.getTotpSecret()
-	        );
-
-	        model.addAttribute(
-	                "qrCodeUrl",
-	                totpService.generateQrCodeUrl(
-	                        "NewAuthLab",
-	                        user.getUsername(),
-	                        user.getTotpSecret()
-	                )
-	        );
-
-	        return "register/totp";
-	    }
+	     securityContextRepository.saveContext(
+	             context,
+	             request,
+	             response
+	     );
 
 
-	    // =========================
-	    // 登録用セッションを削除
-	    // =========================
+	     /*
+	      * Passkey登録用の一時セッション情報
+	      */
+	     session.setAttribute(
+	             "passkeyRegisterUsername",
+	             user.getUsername()
+	     );
 
-	    session.removeAttribute(
-	            "totpRegisterUsername"
-	    );
+	     session.removeAttribute(
+	             "totpRegisterUsername"
+	     );
 
 
-	    // =========================
-	    // 登録完了
-	    // =========================
+	     /*
+	      * Passkey登録画面へ
+	      */
+	     return "redirect:/register/passkey";
+	 }
 
-	    return "redirect:/login";
-	}
 	
 	// =========================
 	// Google Authenticator

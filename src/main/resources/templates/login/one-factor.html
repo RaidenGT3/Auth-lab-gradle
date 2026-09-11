@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>一要素認証</title>
+</head>
+
+<body>
+
+<h1>一要素認証</h1>
+
+<p>使用する認証要素を選択してください。</p>
+
+<form action="/login/one-factor/select" method="post">
+
+    <div>
+        <label>
+            <input type="radio"
+                   name="factor"
+                   value="password"
+                   required>
+            Password
+        </label>
+    </div>
+
+    <br>
+
+    <div>
+        <label>
+            <input type="radio"
+                   name="factor"
+                   value="email">
+            Email OTP
+        </label>
+    </div>
+
+    <br>
+
+    <div>
+        <label>
+            <input type="radio"
+                   name="factor"
+                   value="passkey">
+            Passkey
+        </label>
+    </div>
+
+    <br>
+
+    <button type="submit">
+        次へ
+    </button>
+
+</form>
+
+<p>
+    <a href="/auth">認証方式選択に戻る</a>
+</p>
+
+</body>
+
+</html>

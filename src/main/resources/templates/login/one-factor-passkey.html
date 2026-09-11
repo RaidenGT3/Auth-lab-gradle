@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>一要素認証 - Passkey</title>
+</head>
+
+<body>
+
+<h1>一要素認証</h1>
+
+<h2>Passkey</h2>
+
+<p>
+    Windows Helloを使用してログインします。
+</p>
+
+<p>
+    PIN・指紋・顔認証など、Windows Helloで設定している方法を使用できます。
+</p>
+
+<form action="/login/one-factor/passkey" method="post">
+
+    <div>
+        <label>ユーザー名</label>
+
+        <input type="text"
+               name="username"
+               autocomplete="username"
+               required>
+    </div>
+
+    <br>
+
+    <button type="submit">
+        Passkeyでログイン
+    </button>
+
+</form>
+
+<div th:if="${error}">
+    <p th:text="${error}"></p>
+</div>
+
+<p>
+    <a href="/login/one-factor">
+        認証要素の選択に戻る
+    </a>
+</p>
+
+<p>
+    <a href="/auth">
+        認証方式選択に戻る
+    </a>
+</p>
+
+</body>
+
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>一要素認証 - Email OTP</title>
+</head>
+
+<body>
+
+<h1>一要素認証</h1>
+
+<h2>Email OTP</h2>
+
+<p>登録されているメールアドレスに認証コードを送信します。</p>
+
+<form action="/login/one-factor/email" method="post">
+
+    <div>
+        <label>ユーザー名</label>
+        <input type="text"
+               name="username"
+               required>
+    </div>
+
+    <br>
+
+    <button type="submit">
+        認証コードを送信
+    </button>
+
+</form>
+
+<div th:if="${error}">
+    <p th:text="${error}"></p>
+</div>
+
+<p>
+    <a href="/login/one-factor">
+        認証要素の選択に戻る
+    </a>
+</p>
+
+<p>
+    <a href="/auth">
+        認証方式選択に戻る
+    </a>
+</p>
+
+</body>
+
+</html>

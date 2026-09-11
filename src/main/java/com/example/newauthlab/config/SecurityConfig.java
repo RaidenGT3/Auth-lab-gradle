@@ -26,6 +26,12 @@ public class SecurityConfig {
                 .anyRequest().permitAll()
             )
 
+            // Passkey / WebAuthn
+            .webAuthn(webAuthn -> webAuthn
+                .rpId("localhost")
+                .allowedOrigins("http://localhost:8080")
+            )
+
             .logout(logout -> logout
                 .logoutSuccessUrl("/login")
                 .permitAll()
