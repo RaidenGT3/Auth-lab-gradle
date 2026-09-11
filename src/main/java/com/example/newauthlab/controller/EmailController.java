@@ -72,7 +72,7 @@ public class EmailController {
             // 認証成功
             session.removeAttribute("otp");
 
-            return "emialSuccess";
+            return "index";
         }
 
         // 認証失敗
@@ -82,6 +82,6 @@ public class EmailController {
     // 認証成功画面
     @GetMapping("/success")
     public String success() {
-        return "emialSuccess";
+        return "index";
     }
 }
