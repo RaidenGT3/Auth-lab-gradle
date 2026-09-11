@@ -37,6 +37,8 @@ public class SecurityConfig {
 						.anyRequest().authenticated())
 				.formLogin(form -> form
 						.loginPage("/login")
+						
+						// ログイン成功したら/indexに移動する　が2,3要素認証だとこれではいけませんね
 						.defaultSuccessUrl("/index", true)
 						.permitAll())
 				.logout(logout -> logout
