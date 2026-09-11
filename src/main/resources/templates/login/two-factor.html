@@ -7,9 +7,10 @@
 
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-	<title>一要素認証</title>
+	<title>二要素認証</title>
 
 	<style>
+
 		* {
 			box-sizing: border-box;
 		}
@@ -71,6 +72,7 @@
 		.button:hover {
 			background-color: #555;
 		}
+
 	</style>
 
 </head>
@@ -79,77 +81,63 @@
 
 	<div class="container">
 
-		<h1>一要素認証</h1>
+		<h1>二要素認証</h1>
 
 		<form id="authForm">
 
-			<!-- 知識認証 -->
+			<!-- 知識認証 ＋ 所有認証 -->
 			<label class="auth-option">
 
-				<input type="radio" name="authType" value="knowledge" required>
+				<input
+					type="radio"
+					name="authType"
+					value=""
+					required
+				>
 
-				知識認証
+				知識認証 ＋ 所有認証
 
 			</label>
 
 
-			<!-- 所有認証 -->
+			<!-- 知識認証 ＋ 生体認証 -->
 			<label class="auth-option">
 
-				<input type="radio" name="authType" value="possession">
+				<input
+					type="radio"
+					name="authType"
+					value=""
+				>
 
-				所有物認証
+				知識認証 ＋ 生体認証
 
 			</label>
 
 
-			<!-- 生体認証 -->
+			<!-- 所有認証 ＋ 生体認証 -->
 			<label class="auth-option">
 
-				<input type="radio" name="authType" value="biometric">
+				<input
+					type="radio"
+					name="authType"
+					value=""
+				>
 
-				生体認証
+				所有認証 ＋ 生体認証
 
 			</label>
 
 
-			<button type="submit" class="button">
+			<button
+				type="submit"
+				class="button"
+			>
 				次へ
 			</button>
 
 		</form>
 
 	</div>
-
-
-	<script>
-
-		document.getElementById("authForm").addEventListener("submit", function (event) {
-
-			event.preventDefault();
-
-			const authType = document.querySelector(
-				'input[name="authType"]:checked'
-			).value;
-
-
-			if (authType === "knowledge") {
-
-				window.location.href = "/login";
-
-			} else if (authType === "possession") {
-
-				window.location.href = "/email";
-
-			} else if (authType === "biometric") {
-
-				alert("生体認証は現在準備中です");
-
-			}
-
-		});
-
-	</script>
 
 </body>
 

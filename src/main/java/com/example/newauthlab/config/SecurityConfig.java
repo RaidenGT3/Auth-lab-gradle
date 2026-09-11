@@ -22,9 +22,11 @@ public class SecurityConfig {
 		http
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(
+								"/",								
 								"/auth",
 								"/auth/select",
 								"/login/one-factor",
+								"/login/two-factor",
 								"/login",
 								"/register",
 								"/email",
@@ -35,7 +37,7 @@ public class SecurityConfig {
 						.anyRequest().authenticated())
 				.formLogin(form -> form
 						.loginPage("/login")
-						.defaultSuccessUrl("/", true)
+						.defaultSuccessUrl("/index", true)
 						.permitAll())
 				.logout(logout -> logout
 						.logoutSuccessUrl("/login")
