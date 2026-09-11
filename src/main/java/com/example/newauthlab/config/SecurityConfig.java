@@ -10,30 +10,37 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)
-            throws Exception {
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http)
+			throws Exception {
 
-        http
-            .authorizeHttpRequests(auth -> auth
-            		.requestMatchers("/auth", "/auth/select", "/login", "/register","/email").permitAll()
-                .anyRequest().authenticated()
-            )
-            .formLogin(form -> form
-                .loginPage("/login")
-                .defaultSuccessUrl("/", true)
-                .permitAll()
-            )
-            .logout(logout -> logout
-                .logoutSuccessUrl("/login")
-                .permitAll()
-            );
+		http
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(
+								"/auth",
+								"/auth/select",
+								"/login/one-factor",
+								"/login",
+								"/register",
+								"/email",
+								"/otp",
+								"/send-otp",
+								"/verify-otp")
+						.permitAll()
+						.anyRequest().authenticated())
+				.formLogin(form -> form
+						.loginPage("/login")
+						.defaultSuccessUrl("/", true)
+						.permitAll())
+				.logout(logout -> logout
+						.logoutSuccessUrl("/login")
+						.permitAll());
 
-        return http.build();
-    }
+		return http.build();
+	}
 }

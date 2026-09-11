@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<html lang="ja">
 
 <head>
 
@@ -7,7 +7,7 @@
 
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-	<title>認証選択画面</title>
+	<title>一要素認証</title>
 
 	<style>
 		* {
@@ -79,69 +79,36 @@
 
 	<div class="container">
 
-		<h1>認証選択画面</h1>
+		<h1>一要素認証</h1>
 
-		<form action="/auth/select" method="post">
+		<form id="authForm">
 
-			<!-- CSRF対策 -->
-			<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-
-			<!-- 一段階認証 -->
+			<!-- 知識認証 -->
 			<label class="auth-option">
 
-				<input type="radio" name="authType" value="one-stage" required>
+				<input type="radio" name="authType" value="knowledge" required>
 
-				一段階認証
+				知識認証
 
 			</label>
 
 
-			<!-- 二段階認証 -->
+			<!-- 所有認証 -->
 			<label class="auth-option">
 
-				<input type="radio" name="authType" value="two-stage">
+				<input type="radio" name="authType" value="possession">
 
-				二段階認証
+				所有認証
 
 			</label>
 
 
-			<!-- 三段階認証 -->
+			<!-- 生体認証 -->
 			<label class="auth-option">
 
-				<input type="radio" name="authType" value="three-stage">
+				<input type="radio" name="authType" value="biometric">
 
-				三段階認証
-
-			</label>
-
-
-			<!-- 一要素認証 -->
-			<label class="auth-option">
-
-				<input type="radio" name="authType" value="one-factor">
-
-				一要素認証
-
-			</label>
-
-
-			<!-- 二要素認証 -->
-			<label class="auth-option">
-
-				<input type="radio" name="authType" value="two-factor">
-
-				二要素認証
-
-			</label>
-
-
-			<!-- 三要素認証 -->
-			<label class="auth-option">
-
-				<input type="radio" name="authType" value="three-factor">
-
-				三要素認証
+				生体認証
 
 			</label>
 
@@ -153,6 +120,36 @@
 		</form>
 
 	</div>
+
+
+	<script>
+
+		document.getElementById("authForm").addEventListener("submit", function (event) {
+
+			event.preventDefault();
+
+			const authType = document.querySelector(
+				'input[name="authType"]:checked'
+			).value;
+
+
+			if (authType === "knowledge") {
+
+				window.location.href = "/login";
+
+			} else if (authType === "possession") {
+
+				window.location.href = "/email";
+
+			} else if (authType === "biometric") {
+
+				alert("生体認証は現在準備中です");
+
+			}
+
+		});
+
+	</script>
 
 </body>
 
