@@ -25,6 +25,7 @@ public class SecurityConfig {
 								"/auth",
 								"/auth/select",
 								"/login/one-factor",
+								"/login/two-factor",
 								"/login",
 								"/register",
 								"/email",
