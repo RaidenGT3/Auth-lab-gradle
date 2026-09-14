@@ -1557,25 +1557,6 @@ public class AuthController {
 	}
 	
 	// =========================
-	// Passkey登録画面
-	// =========================
-
-	@GetMapping("/register/passkey")
-	public String registerPasskeyPage(
-	        HttpSession session) {
-
-	    Object usernameObject =
-	            session.getAttribute("passkeyRegisterUsername");
-
-	    if (usernameObject == null) {
-	        return "redirect:/register";
-	    }
-
-	    return "register-passkey";
-	}
-
-	
-	// =========================
 	// Google Authenticator
 	// QRコード画像
 	// =========================
