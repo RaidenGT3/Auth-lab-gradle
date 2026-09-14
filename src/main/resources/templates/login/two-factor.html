@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>二要素認証</title>
+</head>
+<body>
+
+<h1>二要素認証</h1>
+
+<p>認証方式を選択してください</p>
+
+<form th:action="@{/login/two-factor/select}" method="post">
+
+    <label>
+        <input type="radio"
+               name="method"
+               value="password-email"
+               required>
+        Password + Email OTP
+    </label>
+
+    <br><br>
+
+    <label>
+        <input type="radio"
+               name="method"
+               value="password-passkey">
+        Password + Passkey
+    </label>
+
+    <br><br>
+
+    <label>
+        <input type="radio"
+               name="method"
+               value="email-passkey">
+        Email OTP + Passkey
+    </label>
+
+    <br><br>
+
+    <button type="submit">次へ</button>
+
+</form>
+
+</body>
+</html>

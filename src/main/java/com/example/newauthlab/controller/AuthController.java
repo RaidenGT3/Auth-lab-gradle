@@ -1230,16 +1230,6 @@ public class AuthController {
 
 	    return "login/one-factor-email-code";
 	}
-	
-	// =========================
-	// Passkey登録画面
-	// =========================
-
-	//@GetMapping("/register/passkey")
-	//public String registerPasskey() {
-	    //return "register-passkey";
-	//}
-
 
     // =========================
     // 二要素認証ログイン画面
@@ -1626,5 +1616,258 @@ public class AuthController {
 	                .internalServerError()
 	                .build();
 	    }
+	}
+	
+	// =========================
+	// 二要素認証方式の選択
+	// =========================
+	@PostMapping("/login/two-factor/select")
+	public String selectTwoFactorMethod(
+	        @RequestParam String method) {
+
+	    switch (method) {
+
+	        case "password-email":
+	            return "redirect:/login/two-factor/password";
+
+	        case "password-passkey":
+	            return "redirect:/login/two-factor/password-passkey";
+
+	        case "email-passkey":
+	            return "redirect:/login/two-factor/email-passkey";
+
+	        default:
+	            return "redirect:/login/two-factor";
+	    }
+	}
+	
+	// =========================
+	// 二要素認証
+	// 第1段階 - Password
+	// =========================
+	@PostMapping("/login/two-factor/password")
+	public String twoFactorPassword(
+	        @RequestParam String username,
+	        @RequestParam String password,
+	        HttpSession session,
+	        Model model) {
+
+	    Optional<User> optionalUser =
+	            userRepository.findByUsername(username);
+
+	    if (optionalUser.isEmpty()) {
+
+	        model.addAttribute(
+	                "error",
+	                "ユーザー名またはパスワードが正しくありません"
+	        );
+
+	        return "login/two-factor-password";
+	    }
+
+	    User user = optionalUser.get();
+
+	    if (!passwordEncoder.matches(
+	            password,
+	            user.getPassword())) {
+
+	        model.addAttribute(
+	                "error",
+	                "ユーザー名またはパスワードが正しくありません"
+	        );
+
+	        return "login/two-factor-password";
+	    }
+
+	    // Password認証成功
+	    // 次のEmail OTPで使用するユーザーを保存
+	    session.setAttribute(
+	            "twoFactorUsername",
+	            user.getUsername()
+	    );
+
+	    return "redirect:/login/two-factor/email";
+	}
+	
+	@GetMapping("/login/two-factor/password")
+	public String twoFactorPasswordPage() {
+	    return "login/two-factor-password";
+	}
+	
+	// =========================
+	// 二要素認証
+	// 第2段階 - Email OTP画面
+	// =========================
+	@PostMapping("/login/two-factor/email")
+	public String twoFactorEmail(
+	        HttpSession session,
+	        Model model) {
+
+	    Object usernameObject =
+	            session.getAttribute("twoFactorUsername");
+
+	    if (usernameObject == null) {
+	        return "redirect:/login/two-factor";
+	    }
+
+	    String username =
+	            usernameObject.toString();
+
+	    Optional<User> optionalUser =
+	            userRepository.findByUsername(username);
+
+	    if (optionalUser.isEmpty()) {
+	        return "redirect:/login/two-factor";
+	    }
+
+	    User user = optionalUser.get();
+
+	    if (user.getEmail() == null ||
+	            user.getEmail().isBlank()) {
+
+	        model.addAttribute(
+	                "error",
+	                "メールアドレスが登録されていません"
+	        );
+
+	        return "login/two-factor-email";
+	    }
+
+	    String code =
+	            mailService.generateCode();
+
+	    verificationCodeService.saveCode(
+	            session,
+	            user.getEmail(),
+	            code
+	    );
+
+	    mailService.sendVerificationCode(
+	            user.getEmail(),
+	            code
+	    );
+
+	    return "redirect:/login/two-factor/email/code";
+	}
+	
+	@GetMapping("/login/two-factor/email")
+	public String twoFactorEmailPage(HttpSession session) {
+	    if (session.getAttribute("twoFactorUsername") == null) {
+	        return "redirect:/login/two-factor";
+	    }
+
+	    return "login/two-factor-email";
+	}
+	
+	// =========================
+	// 二要素認証
+	// 第2段階 - Email OTP検証
+	// =========================
+	@PostMapping("/login/two-factor/email/code")
+	public String verifyTwoFactorEmailCode(
+	        @RequestParam String code,
+	        HttpSession session,
+	        HttpServletRequest request,
+	        HttpServletResponse response,
+	        Model model) {
+
+	    String savedCode =
+	            verificationCodeService.getCode(session);
+
+	    if (savedCode == null) {
+
+	        model.addAttribute(
+	                "error",
+	                "認証コードの有効期限が切れています"
+	        );
+
+	        return "login/two-factor-email-code";
+	    }
+
+	    if (!verificationCodeService.verifyCode(
+	            session,
+	            code)) {
+
+	        model.addAttribute(
+	                "error",
+	                "認証コードが正しくありません"
+	        );
+
+	        return "login/two-factor-email-code";
+	    }
+
+	    Object usernameObject =
+	            session.getAttribute(
+	                    "twoFactorUsername"
+	            );
+
+	    if (usernameObject == null) {
+
+	        verificationCodeService.clearCode(session);
+
+	        return "redirect:/login/two-factor";
+	    }
+
+	    String username =
+	            usernameObject.toString();
+
+	    Optional<User> optionalUser =
+	            userRepository.findByUsername(username);
+
+	    if (optionalUser.isEmpty()) {
+
+	        verificationCodeService.clearCode(session);
+
+	        session.removeAttribute(
+	                "twoFactorUsername"
+	        );
+
+	        return "redirect:/login/two-factor";
+	    }
+
+	    User user = optionalUser.get();
+
+	    // =========================
+	    // 二要素認証成功
+	    // =========================
+
+	    Authentication authentication =
+	            new UsernamePasswordAuthenticationToken(
+	                    user.getUsername(),
+	                    null,
+	                    java.util.Collections.emptyList()
+	            );
+
+	    SecurityContext context =
+	            SecurityContextHolder.createEmptyContext();
+
+	    context.setAuthentication(authentication);
+
+	    SecurityContextHolder.setContext(context);
+
+	    securityContextRepository.saveContext(
+	            context,
+	            request,
+	            response
+	    );
+
+	    // 一時情報を削除
+
+	    verificationCodeService.clearCode(session);
+
+	    session.removeAttribute(
+	            "twoFactorUsername"
+	    );
+
+	    return "redirect:/";
+	}
+	
+	@GetMapping("/login/two-factor/email/code")
+	public String twoFactorEmailCodePage(HttpSession session) {
+	    if (session.getAttribute("twoFactorUsername") == null) {
+	        return "redirect:/login/two-factor";
+	    }
+
+	    return "login/two-factor-email-code";
 	}
 }
