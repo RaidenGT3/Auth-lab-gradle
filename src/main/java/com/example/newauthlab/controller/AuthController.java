@@ -1,6 +1,7 @@
 package com.example.newauthlab.controller;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Optional;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,11 +40,9 @@ public class AuthController {
     private final VerificationCodeService verificationCodeService;
     private final TotpService totpService;
     private final QrCodeService qrCodeService;
-    
-    // Spring Securityのログイン状態をセッションに保存するために使用
+
     private final SecurityContextRepository securityContextRepository =
             new HttpSessionSecurityContextRepository();
-
 
     public AuthController(
             UserRepository userRepository,
@@ -62,9 +61,9 @@ public class AuthController {
     }
 
 
-    // =========================
+    // =========================================================
     // 認証選択画面
-    // =========================
+    // =========================================================
 
     @GetMapping("/auth")
     public String authSelect() {
@@ -72,9 +71,9 @@ public class AuthController {
     }
 
 
-    // =========================
-    // 認証方式選択処理
-    // =========================
+    // =========================================================
+    // 認証方式選択
+    // =========================================================
 
     @PostMapping("/auth/select")
     public String selectAuth(
@@ -82,48 +81,36 @@ public class AuthController {
 
         switch (authType) {
 
-            // 一段階認証
             case "one-stage":
                 return "redirect:/login/one-stage";
 
-            // 二段階認証
             case "two-stage":
                 return "redirect:/login/two-stage";
 
-            // 三段階認証
             case "three-stage":
                 return "redirect:/login/three-stage";
 
-            // 一要素認証
             case "one-factor":
                 return "redirect:/login/one-factor";
 
-            // 二要素認証
             case "two-factor":
                 return "redirect:/login/two-factor";
 
-
-            // 想定外の値が送られた場合
             default:
                 return "redirect:/auth";
         }
     }
 
 
-    // =========================
-    // 一段階認証ログイン画面
-    // =========================
+    // =========================================================
+    // 一段階認証
+    // ID + Password
+    // =========================================================
 
     @GetMapping("/login/one-stage")
     public String oneStageLogin() {
         return "login/one-stage";
     }
-
-
-    // =========================
-    // 一段階認証
-    // ユーザー名・パスワード確認
-    // =========================
 
     @PostMapping("/login/one-stage")
     public String oneStageLoginProcess(
@@ -133,32 +120,19 @@ public class AuthController {
             HttpServletResponse response,
             Model model) {
 
-        // =========================
-        // ユーザーを検索
-        // =========================
-
         Optional<User> optionalUser =
                 userRepository.findByUsername(username);
 
-        // ユーザーが存在しない場合
         if (optionalUser.isEmpty()) {
 
             model.addAttribute(
                     "error",
-                    "ユーザー名またはパスワードが正しくありません"
-            );
+                    "ユーザー名またはパスワードが正しくありません");
 
             return "login/one-stage";
         }
 
-
-        // ユーザーを取得
         User user = optionalUser.get();
-
-
-        // =========================
-        // パスワードを確認
-        // =========================
 
         if (!passwordEncoder.matches(
                 password,
@@ -166,66 +140,26 @@ public class AuthController {
 
             model.addAttribute(
                     "error",
-                    "ユーザー名またはパスワードが正しくありません"
-            );
+                    "ユーザー名またはパスワードが正しくありません");
 
             return "login/one-stage";
         }
 
-
-        // =========================
-        // Spring Securityにログイン情報を設定
-        // =========================
-
-        Authentication authentication =
-                new UsernamePasswordAuthenticationToken(
-                        user.getUsername(),
-                        null,
-                        java.util.Collections.emptyList()
-                );
-
-
-        SecurityContext context =
-                SecurityContextHolder.createEmptyContext();
-
-        context.setAuthentication(authentication);
-
-        SecurityContextHolder.setContext(context);
-
-
-        // =========================
-        // ログイン状態をセッションに保存
-        // =========================
-
-        securityContextRepository.saveContext(
-                context,
-                request,
-                response
-        );
-
-
-        // =========================
-        // ログイン成功
-        // =========================
+        loginSuccess(user, request, response);
 
         return "redirect:/";
     }
 
 
-    // =========================
-    // 二段階認証ログイン画面
-    // =========================
+    // =========================================================
+    // 二段階認証
+    // Password1 → Password2
+    // =========================================================
 
     @GetMapping("/login/two-stage")
     public String twoStageLogin() {
         return "login/two-stage";
     }
-
-
-    // =========================
-    // 二段階認証
-    // ユーザー名・パスワード確認
-    // =========================
 
     @PostMapping("/login/two-stage")
     public String twoStageLoginProcess(
@@ -234,32 +168,149 @@ public class AuthController {
             HttpSession session,
             Model model) {
 
-        // =========================
-        // ユーザーを検索
-        // =========================
-
         Optional<User> optionalUser =
                 userRepository.findByUsername(username);
 
-        // ユーザーが存在しない場合
         if (optionalUser.isEmpty()) {
 
             model.addAttribute(
                     "error",
-                    "ユーザー名またはパスワードが正しくありません"
-            );
+                    "ユーザー名またはパスワードが正しくありません");
 
             return "login/two-stage";
         }
 
-
-        // ユーザーを取得
         User user = optionalUser.get();
 
+        // Password1
+        if (!passwordEncoder.matches(
+                password,
+                user.getPassword())) {
 
-        // =========================
-        // パスワードを確認
-        // =========================
+            model.addAttribute(
+                    "error",
+                    "ユーザー名またはパスワードが正しくありません");
+
+            return "login/two-stage";
+        }
+
+        // 1段階目成功
+        session.setAttribute(
+                "twoStageUsername",
+                user.getUsername());
+
+        return "redirect:/login/two-stage/password2";
+    }
+
+
+    // =========================================================
+    // 二段階認証
+    // Password2入力画面
+    // =========================================================
+
+    @GetMapping("/login/two-stage/password2")
+    public String twoStagePassword2(
+            HttpSession session) {
+
+        if (session.getAttribute("twoStageUsername") == null) {
+            return "redirect:/login/two-stage";
+        }
+
+        return "login/two-stage-password2";
+    }
+
+
+    // =========================================================
+    // 二段階認証
+    // Password2確認
+    // =========================================================
+
+    @PostMapping("/login/two-stage/password2")
+    public String verifyTwoStagePassword2(
+            @RequestParam String password2,
+            HttpSession session,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Model model) {
+
+        Object usernameObject =
+                session.getAttribute("twoStageUsername");
+
+        if (usernameObject == null) {
+            return "redirect:/login/two-stage";
+        }
+
+        String username =
+                usernameObject.toString();
+
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
+
+        if (optionalUser.isEmpty()) {
+
+            session.removeAttribute("twoStageUsername");
+
+            return "redirect:/login/two-stage";
+        }
+
+        User user = optionalUser.get();
+
+        // Password2
+        if (!passwordEncoder.matches(
+                password2,
+                user.getPassword2())) {
+
+            model.addAttribute(
+                    "error",
+                    "Password2が正しくありません");
+
+            return "login/two-stage-password2";
+        }
+
+        loginSuccess(user, request, response);
+
+        session.removeAttribute("twoStageUsername");
+
+        return "redirect:/";
+    }
+
+
+    // =========================================================
+    // 三段階認証
+    // Password1 → Password2 → Password3
+    // =========================================================
+
+    @GetMapping("/login/three-stage")
+    public String threeStageLogin() {
+        return "login/three-stage";
+    }
+
+
+    // =========================================================
+    // 三段階認証
+    // 第1段階 Password1
+    // =========================================================
+
+    @PostMapping("/login/three-stage")
+    public String threeStageLoginProcess(
+            @RequestParam String username,
+            @RequestParam String password,
+            HttpSession session,
+            Model model) {
+
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
+
+        if (optionalUser.isEmpty()) {
+
+            model.addAttribute(
+                    "error",
+                    "ユーザー名またはパスワードが正しくありません");
+
+            return "login/three-stage";
+        }
+
+        User user = optionalUser.get();
 
         if (!passwordEncoder.matches(
                 password,
@@ -267,676 +318,154 @@ public class AuthController {
 
             model.addAttribute(
                     "error",
-                    "ユーザー名またはパスワードが正しくありません"
-            );
+                    "ユーザー名またはパスワードが正しくありません");
 
-            return "login/two-stage";
+            return "login/three-stage";
         }
-
-
-        // =========================
-        // メールアドレスが登録されているか確認
-        // =========================
-
-        if (user.getEmail() == null ||
-                user.getEmail().isBlank()) {
-
-            model.addAttribute(
-                    "error",
-                    "メールアドレスが登録されていません"
-            );
-
-            return "login/two-stage";
-        }
-
-
-        // =========================
-        // 認証コードを生成
-        // =========================
-
-        String code =
-                mailService.generateCode();
-
-
-        // =========================
-        // 認証コードをセッションに保存
-        // =========================
-
-        verificationCodeService.saveCode(
-                session,
-                user.getEmail(),
-                code
-        );
-
-
-        // =========================
-        // 二段階認証で使用するユーザー名を保存
-        // =========================
 
         session.setAttribute(
-                "twoStageUsername",
-                user.getUsername()
-        );
+                "threeStageUsername",
+                user.getUsername());
 
-
-        // =========================
-        // 認証コードをメール送信
-        // =========================
-
-        mailService.sendVerificationCode(
-                user.getEmail(),
-                code
-        );
-
-
-        // =========================
-        // 認証コード入力画面へ
-        // =========================
-
-        return "redirect:/login/two-stage/code";
+        return "redirect:/login/three-stage/password2";
     }
 
 
-    // =========================
-    // 二段階認証
-    // 認証コード入力画面
-    // =========================
+    // =========================================================
+    // 三段階認証
+    // 第2段階 Password2
+    // =========================================================
 
-    @GetMapping("/login/two-stage/code")
-    public String twoStageCode(
+    @GetMapping("/login/three-stage/password2")
+    public String threeStagePassword2(
             HttpSession session) {
 
-        // 認証コードが存在しない場合は
-        // 二段階認証の最初の画面へ戻す
-        if (verificationCodeService.getCode(session) == null) {
-            return "redirect:/login/two-stage";
+        if (session.getAttribute("threeStageUsername") == null) {
+            return "redirect:/login/three-stage";
         }
 
-        return "login/two-stage-code";
+        return "login/three-stage-password2";
     }
 
 
-    // =========================
-    // 二段階認証
-    // 認証コード確認処理
-    // =========================
-
-    @PostMapping("/login/two-stage/code")
-    public String verifyTwoStageCode(
-            @RequestParam String code,
+    @PostMapping("/login/three-stage/password2")
+    public String verifyThreeStagePassword2(
+            @RequestParam String password2,
             HttpSession session,
-            HttpServletRequest request,
-            HttpServletResponse response,
             Model model) {
 
-        // =========================
-        // 認証コードが存在するか確認
-        // =========================
-
-        String savedCode =
-                verificationCodeService.getCode(session);
-
-        if (savedCode == null) {
-
-            model.addAttribute(
-                    "error",
-                    "認証コードの有効期限が切れています。もう一度ログインしてください"
-            );
-
-            return "login/two-stage-code";
-        }
-
-
-        // =========================
-        // 認証コードを確認
-        // =========================
-
-        if (!verificationCodeService.verifyCode(
-                session,
-                code)) {
-
-            model.addAttribute(
-                    "error",
-                    "認証コードが正しくありません"
-            );
-
-            return "login/two-stage-code";
-        }
-
-
-        // =========================
-        // ユーザー名をセッションから取得
-        // =========================
-
         Object usernameObject =
-                session.getAttribute("twoStageUsername");
+                session.getAttribute("threeStageUsername");
 
         if (usernameObject == null) {
-
-            model.addAttribute(
-                    "error",
-                    "認証情報が確認できません。もう一度ログインしてください"
-            );
-
-            verificationCodeService.clearCode(session);
-
-            return "login/two-stage";
+            return "redirect:/login/three-stage";
         }
 
         String username =
                 usernameObject.toString();
 
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
 
-        // =========================
-        // ユーザーを取得
-        // =========================
+        if (optionalUser.isEmpty()) {
+            session.removeAttribute("threeStageUsername");
+            return "redirect:/login/three-stage";
+        }
+
+        User user = optionalUser.get();
+
+        if (!passwordEncoder.matches(
+                password2,
+                user.getPassword2())) {
+
+            model.addAttribute(
+                    "error",
+                    "Password2が正しくありません");
+
+            return "login/three-stage-password2";
+        }
+
+        return "redirect:/login/three-stage/password3";
+    }
+
+
+    // =========================================================
+    // 三段階認証
+    // 第3段階 Password3
+    // =========================================================
+
+    @GetMapping("/login/three-stage/password3")
+    public String threeStagePassword3(
+            HttpSession session) {
+
+        if (session.getAttribute("threeStageUsername") == null) {
+            return "redirect:/login/three-stage";
+        }
+
+        return "login/three-stage-password3";
+    }
+
+
+    @PostMapping("/login/three-stage/password3")
+    public String verifyThreeStagePassword3(
+            @RequestParam String password3,
+            HttpSession session,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Model model) {
+
+        Object usernameObject =
+                session.getAttribute("threeStageUsername");
+
+        if (usernameObject == null) {
+            return "redirect:/login/three-stage";
+        }
+
+        String username =
+                usernameObject.toString();
 
         Optional<User> optionalUser =
                 userRepository.findByUsername(username);
 
         if (optionalUser.isEmpty()) {
 
-            model.addAttribute(
-                    "error",
-                    "ユーザーが見つかりません"
-            );
+            session.removeAttribute("threeStageUsername");
 
-            verificationCodeService.clearCode(session);
-
-            return "login/two-stage";
+            return "redirect:/login/three-stage";
         }
 
         User user = optionalUser.get();
 
+        if (!passwordEncoder.matches(
+                password3,
+                user.getPassword3())) {
 
-        // =========================
-        // Spring Securityにログイン情報を設定
-        // =========================
+            model.addAttribute(
+                    "error",
+                    "Password3が正しくありません");
 
-        Authentication authentication =
-                new UsernamePasswordAuthenticationToken(
-                        user.getUsername(),
-                        null,
-                        java.util.Collections.emptyList()
-                );
+            return "login/three-stage-password3";
+        }
 
+        loginSuccess(user, request, response);
 
-        SecurityContext context =
-                SecurityContextHolder.createEmptyContext();
-
-        context.setAuthentication(authentication);
-
-        SecurityContextHolder.setContext(context);
-
-
-        // =========================
-        // ログイン状態をセッションに保存
-        // =========================
-
-        securityContextRepository.saveContext(
-                context,
-                request,
-                response
-        );
-
-
-        // =========================
-        // 使用済み認証コードを削除
-        // =========================
-
-        verificationCodeService.clearCode(session);
-
-
-        // =========================
-        // 二段階認証用のユーザー名も削除
-        // =========================
-
-        session.removeAttribute("twoStageUsername");
-
-
-        // =========================
-        // ログイン成功
-        // =========================
+        session.removeAttribute("threeStageUsername");
 
         return "redirect:/";
     }
 
 
-    // =========================
-    // 三段階認証ログイン画面
-    // =========================
-
-    @GetMapping("/login/three-stage")
-    public String threeStageLogin() {
-        return "login/three-stage";
-    }
-    
-	 // =========================
-	 // 三段階認証
-	 // ① ユーザー名・パスワード確認
-	 // =========================
-	
-	 @PostMapping("/login/three-stage")
-	 public String threeStageLoginProcess(
-	         @RequestParam String username,
-	         @RequestParam String password,
-	         HttpSession session,
-	         Model model) {
-	
-	     // =========================
-	     // ユーザーを検索
-	     // =========================
-	
-	     Optional<User> optionalUser =
-	             userRepository.findByUsername(username);
-	
-	     if (optionalUser.isEmpty()) {
-	
-	         model.addAttribute(
-	                 "error",
-	                 "ユーザー名またはパスワードが正しくありません"
-	         );
-	
-	         return "login/three-stage";
-	     }
-	
-	     User user = optionalUser.get();
-	
-	
-	     // =========================
-	     // パスワードを確認
-	     // =========================
-	
-	     if (!passwordEncoder.matches(
-	             password,
-	             user.getPassword())) {
-	
-	         model.addAttribute(
-	                 "error",
-	                 "ユーザー名またはパスワードが正しくありません"
-	         );
-	
-	         return "login/three-stage";
-	     }
-	
-	
-	     // =========================
-	     // メールアドレスを確認
-	     // =========================
-	
-	     if (user.getEmail() == null ||
-	             user.getEmail().isBlank()) {
-	
-	         model.addAttribute(
-	                 "error",
-	                 "メールアドレスが登録されていません"
-	         );
-	
-	         return "login/three-stage";
-	     }
-	
-	
-	     // =========================
-	     // TOTPが登録されているか確認
-	     // =========================
-	
-	     if (user.getTotpSecret() == null ||
-	             user.getTotpSecret().isBlank()) {
-	
-	         model.addAttribute(
-	                 "error",
-	                 "Google Authenticatorが登録されていません"
-	         );
-	
-	         return "login/three-stage";
-	     }
-	
-	
-	     // =========================
-	     // メール認証コードを生成
-	     // =========================
-	
-	     String code =
-	             mailService.generateCode();
-	
-	
-	     // =========================
-	     // 認証コードを保存
-	     // =========================
-	
-	     verificationCodeService.saveCode(
-	             session,
-	             user.getEmail(),
-	             code
-	     );
-	
-	
-	     // =========================
-	     // 三段階認証用ユーザー名を保存
-	     // =========================
-	
-	     session.setAttribute(
-	             "threeStageUsername",
-	             user.getUsername()
-	     );
-	
-	
-	     // =========================
-	     // メール送信
-	     // =========================
-	
-	     mailService.sendVerificationCode(
-	             user.getEmail(),
-	             code
-	     );
-	
-	
-	     // =========================
-	     // メール認証画面へ
-	     // =========================
-	
-	     return "redirect:/login/three-stage/code";
-	 }
-	 
-	// =========================
-	// 三段階認証
-	// ② メール認証コード入力画面
-	// =========================
-
-	@GetMapping("/login/three-stage/code")
-	public String threeStageCode(
-	        HttpSession session) {
-
-	    if (verificationCodeService.getCode(session) == null) {
-	        return "redirect:/login/three-stage";
-	    }
-
-	    return "login/three-stage-code";
-	}
-
-	// =========================
-	// 三段階認証
-	// ② メール認証コード確認
-	// =========================
-
-	@PostMapping("/login/three-stage/code")
-	public String verifyThreeStageCode(
-	        @RequestParam String code,
-	        HttpSession session,
-	        Model model) {
-
-	    // =========================
-	    // 認証コードが存在するか確認
-	    // =========================
-
-	    String savedCode =
-	            verificationCodeService.getCode(session);
-
-	    if (savedCode == null) {
-
-	        model.addAttribute(
-	                "error",
-	                "認証コードの有効期限が切れています。もう一度ログインしてください"
-	        );
-
-	        return "login/three-stage-code";
-	    }
-
-
-	    // =========================
-	    // 認証コードを確認
-	    // =========================
-
-	    if (!verificationCodeService.verifyCode(
-	            session,
-	            code)) {
-
-	        model.addAttribute(
-	                "error",
-	                "認証コードが正しくありません"
-	        );
-
-	        return "login/three-stage-code";
-	    }
-
-
-	    // =========================
-	    // ユーザー名を取得
-	    // =========================
-
-	    Object usernameObject =
-	            session.getAttribute("threeStageUsername");
-
-	    if (usernameObject == null) {
-
-	        verificationCodeService.clearCode(session);
-
-	        return "redirect:/login/three-stage";
-	    }
-
-
-	    String username =
-	            usernameObject.toString();
-
-
-	    // =========================
-	    // ユーザーを取得
-	    // =========================
-
-	    Optional<User> optionalUser =
-	            userRepository.findByUsername(username);
-
-	    if (optionalUser.isEmpty()) {
-
-	        verificationCodeService.clearCode(session);
-
-	        session.removeAttribute(
-	                "threeStageUsername"
-	        );
-
-	        return "redirect:/login/three-stage";
-	    }
-
-
-	    User user = optionalUser.get();
-
-
-	    // =========================
-	    // TOTP登録を確認
-	    // =========================
-
-	    if (user.getTotpSecret() == null ||
-	            user.getTotpSecret().isBlank()) {
-
-	        model.addAttribute(
-	                "error",
-	                "Google Authenticatorが登録されていません"
-	        );
-
-	        return "login/three-stage-code";
-	    }
-
-
-	    // =========================
-	    // メール認証完了
-	    // =========================
-
-	    verificationCodeService.clearCode(session);
-
-
-	    // =========================
-	    // TOTP認証画面へ
-	    // =========================
-
-	    return "redirect:/login/three-stage/totp";
-	}
-	
-	// =========================
-	// 三段階認証
-	// ③ Google Authenticator入力画面
-	// =========================
-
-	@GetMapping("/login/three-stage/totp")
-	public String threeStageTotp(
-	        HttpSession session) {
-
-	    Object usernameObject =
-	            session.getAttribute("threeStageUsername");
-
-	    if (usernameObject == null) {
-	        return "redirect:/login/three-stage";
-	    }
-
-	    return "login/three-stage-totp";
-	}
-	
-	// =========================
-	// 三段階認証
-	// ③ Google Authenticator確認
-	// =========================
-
-	@PostMapping("/login/three-stage/totp")
-	public String verifyThreeStageTotp(
-	        @RequestParam int code,
-	        HttpSession session,
-	        HttpServletRequest request,
-	        HttpServletResponse response,
-	        Model model) {
-
-	    // =========================
-	    // ユーザー名を取得
-	    // =========================
-
-	    Object usernameObject =
-	            session.getAttribute("threeStageUsername");
-
-	    if (usernameObject == null) {
-
-	        return "redirect:/login/three-stage";
-	    }
-
-
-	    String username =
-	            usernameObject.toString();
-
-
-	    // =========================
-	    // ユーザーを取得
-	    // =========================
-
-	    Optional<User> optionalUser =
-	            userRepository.findByUsername(username);
-
-	    if (optionalUser.isEmpty()) {
-
-	        session.removeAttribute(
-	                "threeStageUsername"
-	        );
-
-	        return "redirect:/login/three-stage";
-	    }
-
-
-	    User user = optionalUser.get();
-
-
-	    // =========================
-	    // TOTP秘密鍵を確認
-	    // =========================
-
-	    String secretKey =
-	            user.getTotpSecret();
-
-	    if (secretKey == null ||
-	            secretKey.isBlank()) {
-
-	        model.addAttribute(
-	                "error",
-	                "Google Authenticatorが登録されていません"
-	        );
-
-	        return "login/three-stage-totp";
-	    }
-
-
-	    // =========================
-	    // Google Authenticatorコード確認
-	    // =========================
-
-	    boolean verified =
-	            totpService.verifyCode(
-	                    secretKey,
-	                    code
-	            );
-
-
-	    if (!verified) {
-
-	        model.addAttribute(
-	                "error",
-	                "認証コードが正しくありません"
-	        );
-
-	        return "login/three-stage-totp";
-	    }
-
-
-	    // =========================
-	    // 3段階すべて成功
-	    // =========================
-
-	    Authentication authentication =
-	            new UsernamePasswordAuthenticationToken(
-	                    user.getUsername(),
-	                    null,
-	                    java.util.Collections.emptyList()
-	            );
-
-
-	    SecurityContext context =
-	            SecurityContextHolder.createEmptyContext();
-
-	    context.setAuthentication(authentication);
-
-	    SecurityContextHolder.setContext(context);
-
-
-	    // =========================
-	    // ログイン状態をセッションに保存
-	    // =========================
-
-	    securityContextRepository.saveContext(
-	            context,
-	            request,
-	            response
-	    );
-
-
-	    // =========================
-	    // 三段階認証用セッションを削除
-	    // =========================
-
-	    session.removeAttribute(
-	            "threeStageUsername"
-	    );
-
-
-	    // =========================
-	    // ログイン成功
-	    // =========================
-
-	    return "redirect:/";
-	}
-
-    // =========================
-    // 一要素認証ログイン画面
-    // =========================
+    // =========================================================
+    // 一要素認証
+    // Password または Email OTP
+    // =========================================================
 
     @GetMapping("/login/one-factor")
     public String oneFactorLogin() {
         return "login/one-factor";
     }
-    
+
+
     @PostMapping("/login/one-factor/select")
     public String selectOneFactor(
             @RequestParam String factor) {
@@ -949,321 +478,438 @@ public class AuthController {
             case "email":
                 return "redirect:/login/one-factor/email";
 
-            case "passkey":
-                return "redirect:/login/one-factor/passkey";
-
             default:
                 return "redirect:/login/one-factor";
         }
     }
-    
-	 // =========================
-	 // 一要素認証 - Password認証
-	 // =========================
-	
-	 @PostMapping("/login/one-factor/password")
-	 public String oneFactorPasswordLogin(
-	         @RequestParam String username,
-	         @RequestParam String password,
-	         HttpServletRequest request,
-	         HttpServletResponse response,
-	         Model model) {
-	
-	     Optional<User> optionalUser =
-	             userRepository.findByUsername(username);
-	
-	     // ユーザーが存在しない
-	     if (optionalUser.isEmpty()) {
-	
-	         model.addAttribute(
-	                 "error",
-	                 "ユーザー名またはパスワードが正しくありません"
-	         );
-	
-	         return "login/one-factor-password";
-	     }
-	
-	     User user = optionalUser.get();
-	
-	     // パスワード確認
-	     if (!passwordEncoder.matches(
-	             password,
-	             user.getPassword())) {
-	
-	         model.addAttribute(
-	                 "error",
-	                 "ユーザー名またはパスワードが正しくありません"
-	         );
-	
-	         return "login/one-factor-password";
-	     }
-	
-	     // =========================
-	     // 認証成功
-	     // =========================
-	
-	     Authentication authentication =
-	             new UsernamePasswordAuthenticationToken(
-	                     user.getUsername(),
-	                     null,
-	                     java.util.Collections.emptyList()
-	             );
-	
-	     SecurityContext context =
-	             SecurityContextHolder.createEmptyContext();
-	
-	     context.setAuthentication(authentication);
-	
-	     SecurityContextHolder.setContext(context);
-	
-	     securityContextRepository.saveContext(
-	             context,
-	             request,
-	             response
-	     );
-	
-	     return "redirect:/";
-	 }
-	 
-	 @GetMapping("/login/one-factor/password")
-	 public String oneFactorPasswordPage() {
-	     return "login/one-factor-password";
-	 }
-	 
-	// =========================
-	// 一要素認証 - Email OTP送信
-	// =========================
 
-	@PostMapping("/login/one-factor/email")
-	public String oneFactorEmailLogin(
-	        @RequestParam String username,
-	        HttpSession session,
-	        Model model) {
 
-	    Optional<User> optionalUser =
-	            userRepository.findByUsername(username);
+    // =========================================================
+    // 一要素認証 - Password
+    // =========================================================
 
-	    // ユーザーが存在しない
-	    if (optionalUser.isEmpty()) {
+    @GetMapping("/login/one-factor/password")
+    public String oneFactorPasswordPage() {
+        return "login/one-factor-password";
+    }
 
-	        model.addAttribute(
-	                "error",
-	                "ユーザー名が正しくありません"
-	        );
 
-	        return "login/one-factor-email";
-	    }
+    @PostMapping("/login/one-factor/password")
+    public String oneFactorPasswordLogin(
+            @RequestParam String username,
+            @RequestParam String password,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Model model) {
 
-	    User user = optionalUser.get();
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
 
-	    // メールアドレスが登録されていない
-	    if (user.getEmail() == null ||
-	            user.getEmail().isBlank()) {
+        if (optionalUser.isEmpty()) {
 
-	        model.addAttribute(
-	                "error",
-	                "メールアドレスが登録されていません"
-	        );
+            model.addAttribute(
+                    "error",
+                    "ユーザー名またはパスワードが正しくありません");
 
-	        return "login/one-factor-email";
-	    }
+            return "login/one-factor-password";
+        }
 
-	    // 6桁の認証コードを生成
-	    String code =
-	            mailService.generateCode();
+        User user = optionalUser.get();
 
-	    // セッションに保存
-	    verificationCodeService.saveCode(
-	            session,
-	            user.getEmail(),
-	            code
-	    );
+        if (!passwordEncoder.matches(
+                password,
+                user.getPassword())) {
 
-	    // 一要素認証用のユーザー名を保存
-	    session.setAttribute(
-	            "oneFactorEmailUsername",
-	            user.getUsername()
-	    );
+            model.addAttribute(
+                    "error",
+                    "ユーザー名またはパスワードが正しくありません");
 
-	    // メール送信
-	    mailService.sendVerificationCode(
-	            user.getEmail(),
-	            code
-	    );
+            return "login/one-factor-password";
+        }
 
-	    return "redirect:/login/one-factor/email/code";
-	}
-	
-	// =========================
-	// 一要素認証 - Email OTP入力画面
-	// =========================
+        loginSuccess(user, request, response);
 
-	@GetMapping("/login/one-factor/email")
-	public String oneFactorEmailPage() {
-	    return "login/one-factor-email";
-	}
-	
-	// =========================
-	// 一要素認証 - Email OTP検証
-	// =========================
+        return "redirect:/";
+    }
 
-	@PostMapping("/login/one-factor/email/code")
-	public String verifyOneFactorEmailCode(
-	        @RequestParam String code,
-	        HttpSession session,
-	        HttpServletRequest request,
-	        HttpServletResponse response,
-	        Model model) {
 
-	    // 保存されている認証コードを確認
-	    String savedCode =
-	            verificationCodeService.getCode(session);
+    // =========================================================
+    // 一要素認証 - Email OTP
+    // =========================================================
 
-	    if (savedCode == null) {
+    @GetMapping("/login/one-factor/email")
+    public String oneFactorEmailPage() {
+        return "login/one-factor-email";
+    }
 
-	        model.addAttribute(
-	                "error",
-	                "認証コードの有効期限が切れています。もう一度ログインしてください"
-	        );
 
-	        return "login/one-factor-email-code";
-	    }
+    @PostMapping("/login/one-factor/email")
+    public String oneFactorEmailLogin(
+            @RequestParam String username,
+            HttpSession session,
+            Model model) {
 
-	    // 認証コードを検証
-	    if (!verificationCodeService.verifyCode(
-	            session,
-	            code)) {
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
 
-	        model.addAttribute(
-	                "error",
-	                "認証コードが正しくありません"
-	        );
+        if (optionalUser.isEmpty()) {
 
-	        return "login/one-factor-email-code";
-	    }
+            model.addAttribute(
+                    "error",
+                    "ユーザー名が正しくありません");
 
-	    // 一要素認証用のユーザー名を取得
-	    Object usernameObject =
-	            session.getAttribute(
-	                    "oneFactorEmailUsername"
-	            );
+            return "login/one-factor-email";
+        }
 
-	    if (usernameObject == null) {
+        User user = optionalUser.get();
 
-	        verificationCodeService.clearCode(session);
+        if (user.getEmail() == null ||
+                user.getEmail().isBlank()) {
 
-	        return "redirect:/login/one-factor/email";
-	    }
+            model.addAttribute(
+                    "error",
+                    "メールアドレスが登録されていません");
 
-	    String username =
-	            usernameObject.toString();
+            return "login/one-factor-email";
+        }
 
-	    // ユーザーをDBから取得
-	    Optional<User> optionalUser =
-	            userRepository.findByUsername(username);
+        String code =
+                mailService.generateCode();
 
-	    if (optionalUser.isEmpty()) {
+        verificationCodeService.saveCode(
+                session,
+                user.getEmail(),
+                code);
 
-	        verificationCodeService.clearCode(session);
+        session.setAttribute(
+                "oneFactorEmailUsername",
+                user.getUsername());
 
-	        session.removeAttribute(
-	                "oneFactorEmailUsername"
-	        );
+        mailService.sendVerificationCode(
+                user.getEmail(),
+                code);
 
-	        return "redirect:/login/one-factor/email";
-	    }
+        return "redirect:/login/one-factor/email/code";
+    }
 
-	    User user = optionalUser.get();
 
-	    // =========================
-	    // 認証成功
-	    // =========================
+    @GetMapping("/login/one-factor/email/code")
+    public String oneFactorEmailCodePage(
+            HttpSession session) {
 
-	    Authentication authentication =
-	            new UsernamePasswordAuthenticationToken(
-	                    user.getUsername(),
-	                    null,
-	                    java.util.Collections.emptyList()
-	            );
+        if (session.getAttribute(
+                "oneFactorEmailUsername") == null) {
 
-	    SecurityContext context =
-	            SecurityContextHolder.createEmptyContext();
+            return "redirect:/login/one-factor/email";
+        }
 
-	    context.setAuthentication(authentication);
+        return "login/one-factor-email-code";
+    }
 
-	    SecurityContextHolder.setContext(context);
 
-	    securityContextRepository.saveContext(
-	            context,
-	            request,
-	            response
-	    );
+    @PostMapping("/login/one-factor/email/code")
+    public String verifyOneFactorEmailCode(
+            @RequestParam String code,
+            HttpSession session,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Model model) {
 
-	    // 認証コードと一時情報を削除
-	    verificationCodeService.clearCode(session);
+        if (verificationCodeService.getCode(session) == null) {
 
-	    session.removeAttribute(
-	            "oneFactorEmailUsername"
-	    );
+            model.addAttribute(
+                    "error",
+                    "認証コードの有効期限が切れています。もう一度ログインしてください");
 
-	    return "redirect:/";
-	}
-	
-	// =========================
-	// 一要素認証 - Email OTPコード入力画面
-	// =========================
+            return "login/one-factor-email-code";
+        }
 
-	@GetMapping("/login/one-factor/email/code")
-	public String oneFactorEmailCodePage(
-	        HttpSession session,
-	        Model model) {
+        if (!verificationCodeService.verifyCode(
+                session,
+                code)) {
 
-	    Object usernameObject =
-	            session.getAttribute("oneFactorEmailUsername");
+            model.addAttribute(
+                    "error",
+                    "認証コードが正しくありません");
 
-	    if (usernameObject == null) {
-	        return "redirect:/login/one-factor/email";
-	    }
+            return "login/one-factor-email-code";
+        }
 
-	    return "login/one-factor-email-code";
-	}
+        Object usernameObject =
+                session.getAttribute(
+                        "oneFactorEmailUsername");
 
-    // =========================
-    // 二要素認証ログイン画面
-    // =========================
+        if (usernameObject == null) {
+
+            verificationCodeService.clearCode(session);
+
+            return "redirect:/login/one-factor/email";
+        }
+
+        String username =
+                usernameObject.toString();
+
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
+
+        if (optionalUser.isEmpty()) {
+
+            verificationCodeService.clearCode(session);
+
+            session.removeAttribute(
+                    "oneFactorEmailUsername");
+
+            return "redirect:/login/one-factor/email";
+        }
+
+        User user = optionalUser.get();
+
+        loginSuccess(user, request, response);
+
+        verificationCodeService.clearCode(session);
+
+        session.removeAttribute(
+                "oneFactorEmailUsername");
+
+        return "redirect:/";
+    }
+
+
+    // =========================================================
+    // 二要素認証
+    // Password → Email OTP
+    // =========================================================
 
     @GetMapping("/login/two-factor")
     public String twoFactorLogin() {
         return "login/two-factor-password";
     }
 
-    // =========================
-    // 通常ログイン画面
-    // =========================
+
+    // =========================================================
+    // 二要素認証 第1段階 Password
+    // =========================================================
+
+    @GetMapping("/login/two-factor/password")
+    public String twoFactorPasswordPage() {
+        return "login/two-factor-password";
+    }
+
+
+    @PostMapping("/login/two-factor/password")
+    public String twoFactorPassword(
+            @RequestParam String username,
+            @RequestParam String password,
+            HttpSession session,
+            Model model) {
+
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
+
+        if (optionalUser.isEmpty()) {
+
+            model.addAttribute(
+                    "error",
+                    "ユーザー名またはパスワードが正しくありません");
+
+            return "login/two-factor-password";
+        }
+
+        User user = optionalUser.get();
+
+        if (!passwordEncoder.matches(
+                password,
+                user.getPassword())) {
+
+            model.addAttribute(
+                    "error",
+                    "ユーザー名またはパスワードが正しくありません");
+
+            return "login/two-factor-password";
+        }
+
+        session.setAttribute(
+                "twoFactorUsername",
+                user.getUsername());
+
+        return "redirect:/login/two-factor/email";
+    }
+
+
+    // =========================================================
+    // 二要素認証 第2段階 Email OTP送信
+    // =========================================================
+
+    @GetMapping("/login/two-factor/email")
+    public String twoFactorEmailPage(
+            HttpSession session) {
+
+        if (session.getAttribute(
+                "twoFactorUsername") == null) {
+
+            return "redirect:/login/two-factor";
+        }
+
+        return "login/two-factor-email";
+    }
+
+
+    @PostMapping("/login/two-factor/email")
+    public String twoFactorEmail(
+            HttpSession session,
+            Model model) {
+
+        Object usernameObject =
+                session.getAttribute("twoFactorUsername");
+
+        if (usernameObject == null) {
+            return "redirect:/login/two-factor";
+        }
+
+        String username =
+                usernameObject.toString();
+
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
+
+        if (optionalUser.isEmpty()) {
+            return "redirect:/login/two-factor";
+        }
+
+        User user = optionalUser.get();
+
+        if (user.getEmail() == null ||
+                user.getEmail().isBlank()) {
+
+            model.addAttribute(
+                    "error",
+                    "メールアドレスが登録されていません");
+
+            return "login/two-factor-email";
+        }
+
+        String code =
+                mailService.generateCode();
+
+        verificationCodeService.saveCode(
+                session,
+                user.getEmail(),
+                code);
+
+        mailService.sendVerificationCode(
+                user.getEmail(),
+                code);
+
+        return "redirect:/login/two-factor/email/code";
+    }
+
+
+    // =========================================================
+    // 二要素認証 第2段階 Email OTP入力
+    // =========================================================
+
+    @GetMapping("/login/two-factor/email/code")
+    public String twoFactorEmailCodePage(
+            HttpSession session) {
+
+        if (session.getAttribute(
+                "twoFactorUsername") == null) {
+
+            return "redirect:/login/two-factor";
+        }
+
+        return "login/two-factor-email-code";
+    }
+
+
+    @PostMapping("/login/two-factor/email/code")
+    public String verifyTwoFactorEmailCode(
+            @RequestParam String code,
+            HttpSession session,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Model model) {
+
+        if (verificationCodeService.getCode(session) == null) {
+
+            model.addAttribute(
+                    "error",
+                    "認証コードの有効期限が切れています");
+
+            return "login/two-factor-email-code";
+        }
+
+        if (!verificationCodeService.verifyCode(
+                session,
+                code)) {
+
+            model.addAttribute(
+                    "error",
+                    "認証コードが正しくありません");
+
+            return "login/two-factor-email-code";
+        }
+
+        Object usernameObject =
+                session.getAttribute("twoFactorUsername");
+
+        if (usernameObject == null) {
+
+            verificationCodeService.clearCode(session);
+
+            return "redirect:/login/two-factor";
+        }
+
+        String username =
+                usernameObject.toString();
+
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
+
+        if (optionalUser.isEmpty()) {
+
+            verificationCodeService.clearCode(session);
+
+            session.removeAttribute(
+                    "twoFactorUsername");
+
+            return "redirect:/login/two-factor";
+        }
+
+        User user = optionalUser.get();
+
+        loginSuccess(user, request, response);
+
+        verificationCodeService.clearCode(session);
+
+        session.removeAttribute(
+                "twoFactorUsername");
+
+        return "redirect:/";
+    }
+
+
+    // =========================================================
+    // 通常の /login
+    // =========================================================
 
     @GetMapping("/login")
     public String login() {
         return "redirect:/auth";
     }
+	    
+	 // =========================================================
+	 // 新規登録画面
+	 // =========================================================
+	 @GetMapping("/register")
+	 public String registerPage() {
+	     return "register";
+	 }
 
-		// 二段階認証
-		case "two-stage":
-			session.setAttribute("authState", "two-stage");
-			return "redirect:/login";
 
-		// 三段階認証
-		case "three-stage":
-			session.setAttribute("authState", "three-stage-now-step1");
-
-			return "redirect:/login";
-
-		// 一要素認証
-		case "one-factor":
-			return "redirect:/login/one-factor";
-
-		// 二要素認証
-		case "two-factor":
-			return "redirect:/login/two-factor";
+    // =========================================================
+    // ユーザー登録
+    // =========================================================
 
     @PostMapping("/register")
     public String registerUser(
@@ -1275,499 +921,292 @@ public class AuthController {
             HttpSession session,
             Model model) {
 
-        // =========================
-        // ユーザー名がすでに存在するか確認
-        // =========================
-
+        // ユーザー名重複確認
         if (userRepository.existsByUsername(username)) {
 
-		// 想定外の値が送られた場合
-		default:
-			return "redirect:/auth";
-		}
-	}
+            model.addAttribute(
+                    "error",
+                    "そのユーザー名はすでに使用されています");
 
-	// =========================
-	// 一段階認証ログイン画面
-	// =========================
+            return "register";
+        }
 
-	@GetMapping("/login/one-stage")
-	public String oneStageLogin() {
-		return "login";
-	}
+//        // メールアドレス重複確認
+//        if (userRepository.existsByEmail(email)) {
+//
+//            model.addAttribute(
+//                    "error",
+//                    "そのメールアドレスはすでに使用されています");
+//
+//            return "register";
+//        }
 
-        // =========================
-        // 新しいユーザーを作成
-        // =========================
-
+        // ユーザー作成
         User user = new User();
 
+        user.setUsername(username);
 
+        user.setPassword(
+                passwordEncoder.encode(password));
 
-        // パスワードをBCryptで暗号化
-        user.setPassword(passwordEncoder.encode(password));
-        user.setPassword2(passwordEncoder.encode(password2));
-        user.setPassword3(passwordEncoder.encode(password3));
+        user.setPassword2(
+                passwordEncoder.encode(password2));
 
+        user.setPassword3(
+                passwordEncoder.encode(password3));
 
-        // メールアドレスを保存
         user.setEmail(email);
 
-
-        // =========================
-        // Google Authenticator用秘密鍵を生成
-        // =========================
-
+        // TOTP秘密鍵生成
         String secretKey =
                 totpService.generateSecretKey();
 
         user.setTotpSecret(secretKey);
 
-
-        // =========================
-        // データベースへ保存
-        // =========================
-
+        // DB保存
         userRepository.save(user);
 
-	@GetMapping("/login/one-factor")
-	public String oneFactorLogin() {
-		return "login/one-factor";
-	}
-
-        // =========================
-        // TOTP登録に必要な情報をセッションへ保存
-        // =========================
-
+        // TOTP登録用ユーザー名を保存
         session.setAttribute(
                 "totpRegisterUsername",
-                username
-        );
-
-
-        // =========================
-        // Google Authenticator設定画面へ
-        // =========================
+                username);
 
         return "redirect:/register/totp";
     }
-    
-	 // =========================
-	 // Google Authenticator登録画面
-	 // =========================
-	
-	 @GetMapping("/register/totp")
-	 public String registerTotp(
-	         HttpSession session,
-	         Model model) {
-	
-	     Object usernameObject =
-	             session.getAttribute("totpRegisterUsername");
-	
-	     if (usernameObject == null) {
-	         return "redirect:/register";
-	     }
-	
-	     String username =
-	             usernameObject.toString();
-	
-	     Optional<User> optionalUser =
-	             userRepository.findByUsername(username);
-	
-	     if (optionalUser.isEmpty()) {
-	         return "redirect:/register";
-	     }
-	
-	     User user = optionalUser.get();
-	
-	     String secretKey =
-	             user.getTotpSecret();
-	
-	     String qrCodeUrl =
-	             totpService.generateQrCodeUrl(
-	                     "NewAuthLab",
-	                     user.getUsername(),
-	                     secretKey
-	             );
-	
-	     model.addAttribute(
-	             "username",
-	             user.getUsername()
-	     );
-	
-	     model.addAttribute(
-	             "secretKey",
-	             secretKey
-	     );
-	
-	     model.addAttribute(
-	             "qrCodeUrl",
-	             qrCodeUrl
-	     );
-	
-	     return "register/totp";
-	 }
-	 
-	// =========================
-	// Google Authenticator登録確認
-	// =========================
-	 @PostMapping("/register/totp/verify")
-	 public String verifyRegisterTotp(
-	         @RequestParam String code,
-	         HttpSession session,
-	         Model model) {
-
-	     Object usernameObject =
-	             session.getAttribute("totpRegisterUsername");
-
-	     if (usernameObject == null) {
-	         model.addAttribute(
-	                 "error",
-	                 "登録情報が見つかりません。もう一度登録してください"
-	         );
-	         return "redirect:/register";
-	     }
-
-	     String username =
-	             usernameObject.toString();
-
-	     Optional<User> optionalUser =
-	             userRepository.findByUsername(username);
-
-	     if (optionalUser.isEmpty()) {
-	         model.addAttribute(
-	                 "error",
-	                 "ユーザーが見つかりません"
-	         );
-	         return "redirect:/register";
-	     }
-
-	     User user =
-	             optionalUser.get();
-
-	     String codeString =
-	             String.valueOf(code);
-
-	     int totpCode;
-
-	     try {
-	         totpCode =
-	                 Integer.parseInt(codeString);
-	     } catch (NumberFormatException e) {
 
-	         model.addAttribute(
-	                 "error",
-	                 "認証コードは数字6桁で入力してください"
-	         );
 
-	         return "register-totp";
-	     }
+    // =========================================================
+    // Google Authenticator登録画面
+    // =========================================================
 
-	     boolean verified =
-	             totpService.verifyCode(
-	                     user.getTotpSecret(),
-	                     totpCode
-	             );
-
-	     if (!verified) {
-
-	         model.addAttribute(
-	                 "error",
-	                 "認証コードが正しくありません"
-	         );
-
-	         return "register-totp";
-	     }
-
-	     // TOTP認証成功
-	     // Passkey登録は行わない
-
-	     session.removeAttribute("totpRegisterUsername");
-
-	     return "redirect:/auth";
-	 }
-	 
-	// =========================
-	// TOTP認証コード入力画面
-	// =========================
-
-	@GetMapping("/register/totp/verify")
-	public String registerTotpVerifyPage() {
-	    return "register-totp";
-	}
-	
-	// =========================
-	// Google Authenticator
-	// QRコード画像
-	// =========================
-
-	@GetMapping("/register/totp/qr")
-	public ResponseEntity<byte[]> registerTotpQr(
-	        HttpSession session) {
-
-	    Object usernameObject =
-	            session.getAttribute("totpRegisterUsername");
-
-	    if (usernameObject == null) {
-	        return ResponseEntity.notFound().build();
-	    }
-
-	    String username =
-	            usernameObject.toString();
-
-	    Optional<User> optionalUser =
-	            userRepository.findByUsername(username);
-
-	    if (optionalUser.isEmpty()) {
-	        return ResponseEntity.notFound().build();
-	    }
-
-	    User user = optionalUser.get();
-
-	    String secretKey =
-	            user.getTotpSecret();
-
-	    if (secretKey == null ||
-	            secretKey.isBlank()) {
-
-	        return ResponseEntity.notFound().build();
-	    }
-
-
-	    // =========================
-	    // Google Authenticator用URL
-	    // =========================
-
-	    String qrCodeUrl =
-	            totpService.generateQrCodeUrl(
-	                    "NewAuthLab",
-	                    user.getUsername(),
-	                    secretKey
-	            );
-
-
-	    try {
-
-	        byte[] qrCodeImage =
-	                qrCodeService.generateQrCode(
-	                        qrCodeUrl,
-	                        300,
-	                        300
-	                );
-
-	        return ResponseEntity
-	                .ok()
-	                .contentType(MediaType.IMAGE_PNG)
-	                .body(qrCodeImage);
-
-	    } catch (WriterException | IOException e) {
-
-	        return ResponseEntity
-	                .internalServerError()
-	                .build();
-	    }
-	}
-	
-	// =========================
-	// 二要素認証
-	// 第1段階 - Password
-	// =========================
-	@PostMapping("/login/two-factor/password")
-	public String twoFactorPassword(
-	        @RequestParam String username,
-	        @RequestParam String password,
-	        HttpSession session,
-	        Model model) {
-
-	    Optional<User> optionalUser = userRepository.findByUsername(username);
-
-	    if (optionalUser.isEmpty()) {
-	        model.addAttribute("error", "ユーザー名またはパスワードが正しくありません");
-	        return "login/two-factor-password";
-	    }
-
-	    User user = optionalUser.get();
-
-	    if (!passwordEncoder.matches(password, user.getPassword())) {
-	        model.addAttribute("error", "ユーザー名またはパスワードが正しくありません");
-	        return "login/two-factor-password";
-	    }
-
-	    session.setAttribute("twoFactorUsername", user.getUsername());
-
-	    return "redirect:/login/two-factor/email";
-	}
-	
-	@GetMapping("/login/two-factor/password")
-	public String twoFactorPasswordPage() {
-	    return "login/two-factor-password";
-	}
-	
-	// =========================
-	// 二要素認証
-	// 第2段階 - Email OTP画面
-	// =========================
-	@PostMapping("/login/two-factor/email")
-	public String twoFactorEmail(
-	        HttpSession session,
-	        Model model) {
-
-	    Object usernameObject = session.getAttribute("twoFactorUsername");
-
-	    if (usernameObject == null) {
-	        return "redirect:/login/two-factor";
-	    }
-
-	    String username = usernameObject.toString();
-
-	    Optional<User> optionalUser = userRepository.findByUsername(username);
-
-	    if (optionalUser.isEmpty()) {
-	        return "redirect:/login/two-factor";
-	    }
-
-	    User user = optionalUser.get();
-
-	    if (user.getEmail() == null || user.getEmail().isBlank()) {
-	        model.addAttribute("error", "メールアドレスが登録されていません");
-	        return "login/two-factor-email";
-	    }
-
-	    String code = mailService.generateCode();
-
-	    verificationCodeService.saveCode(
-	        session,
-	        user.getEmail(),
-	        code
-	    );
-
-	    mailService.sendVerificationCode(
-	        user.getEmail(),
-	        code
-	    );
-
-	    return "redirect:/login/two-factor/email/code";
-	}
-	
-	@GetMapping("/login/two-factor/email")
-	public String twoFactorEmailPage(HttpSession session) {
-
-	    if (session.getAttribute("twoFactorUsername") == null) {
-	        return "redirect:/login/two-factor";
-	    }
-
-	    return "login/two-factor-email";
-	}
-	
-	// =========================
-	// 二要素認証
-	// 第2段階 - Email OTP検証
-	// =========================
-	@PostMapping("/login/two-factor/email/code")
-	public String verifyTwoFactorEmailCode(
-	        @RequestParam String code,
-	        HttpSession session,
-	        HttpServletRequest request,
-	        HttpServletResponse response,
-	        Model model) {
-
-	    String savedCode =
-	            verificationCodeService.getCode(session);
-
-	    if (savedCode == null) {
-
-	        model.addAttribute(
-	                "error",
-	                "認証コードの有効期限が切れています"
-	        );
-
-	        return "login/two-factor-email-code";
-	    }
-
-	    if (!verificationCodeService.verifyCode(
-	            session,
-	            code)) {
-
-	        model.addAttribute(
-	                "error",
-	                "認証コードが正しくありません"
-	        );
-
-	        return "login/two-factor-email-code";
-	    }
-
-	    Object usernameObject =
-	            session.getAttribute(
-	                    "twoFactorUsername"
-	            );
-
-	    if (usernameObject == null) {
-
-	        verificationCodeService.clearCode(session);
-
-	        return "redirect:/login/two-factor";
-	    }
-
-	    String username =
-	            usernameObject.toString();
-
-	    Optional<User> optionalUser =
-	            userRepository.findByUsername(username);
-
-	    if (optionalUser.isEmpty()) {
-
-	        verificationCodeService.clearCode(session);
-
-	        session.removeAttribute(
-	                "twoFactorUsername"
-	        );
-
-	        return "redirect:/login/two-factor";
-	    }
-
-	    User user = optionalUser.get();
-
-	    // =========================
-	    // 二要素認証成功
-	    // =========================
-
-	    Authentication authentication =
-	            new UsernamePasswordAuthenticationToken(
-	                    user.getUsername(),
-	                    null,
-	                    java.util.Collections.emptyList()
-	            );
-
-	    SecurityContext context =
-	            SecurityContextHolder.createEmptyContext();
-
-	    context.setAuthentication(authentication);
-
-	    SecurityContextHolder.setContext(context);
-
-	    securityContextRepository.saveContext(
-	            context,
-	            request,
-	            response
-	    );
-
-	    // 一時情報を削除
-
-	    verificationCodeService.clearCode(session);
-
-	    session.removeAttribute(
-	            "twoFactorUsername"
-	    );
-
-	    return "redirect:/";
-	}
-	
-	@GetMapping("/login/two-factor/email/code")
-	public String twoFactorEmailCodePage(HttpSession session) {
-	    if (session.getAttribute("twoFactorUsername") == null) {
-	        return "redirect:/login/two-factor";
-	    }
-
-	    return "login/two-factor-email-code";
-	}
+    @GetMapping("/register/totp")
+    public String registerTotp(
+            HttpSession session,
+            Model model) {
+
+        Object usernameObject =
+                session.getAttribute(
+                        "totpRegisterUsername");
+
+        if (usernameObject == null) {
+            return "redirect:/register";
+        }
+
+        String username =
+                usernameObject.toString();
+
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
+
+        if (optionalUser.isEmpty()) {
+            return "redirect:/register";
+        }
+
+        User user = optionalUser.get();
+
+        String secretKey =
+                user.getTotpSecret();
+
+        String qrCodeUrl =
+                totpService.generateQrCodeUrl(
+                        "NewAuthLab",
+                        user.getUsername(),
+                        secretKey);
+
+        model.addAttribute(
+                "username",
+                user.getUsername());
+
+        model.addAttribute(
+                "secretKey",
+                secretKey);
+
+        model.addAttribute(
+                "qrCodeUrl",
+                qrCodeUrl);
+
+        return "register/totp";
+    }
+
+
+    // =========================================================
+    // Google Authenticator登録確認
+    // =========================================================
+
+    @PostMapping("/register/totp/verify")
+    public String verifyRegisterTotp(
+            @RequestParam String code,
+            HttpSession session,
+            Model model) {
+
+        Object usernameObject =
+                session.getAttribute(
+                        "totpRegisterUsername");
+
+        if (usernameObject == null) {
+
+            model.addAttribute(
+                    "error",
+                    "登録情報が見つかりません。もう一度登録してください");
+
+            return "redirect:/register";
+        }
+
+        String username =
+                usernameObject.toString();
+
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
+
+        if (optionalUser.isEmpty()) {
+
+            model.addAttribute(
+                    "error",
+                    "ユーザーが見つかりません");
+
+            return "redirect:/register";
+        }
+
+        User user = optionalUser.get();
+
+        int totpCode;
+
+        try {
+
+            totpCode =
+                    Integer.parseInt(code);
+
+        } catch (NumberFormatException e) {
+
+            model.addAttribute(
+                    "error",
+                    "認証コードは数字6桁で入力してください");
+
+            return "register-totp";
+        }
+
+        boolean verified =
+                totpService.verifyCode(
+                        user.getTotpSecret(),
+                        totpCode);
+
+        if (!verified) {
+
+            model.addAttribute(
+                    "error",
+                    "認証コードが正しくありません");
+
+            return "register-totp";
+        }
+
+        // TOTP登録完了
+        session.removeAttribute(
+                "totpRegisterUsername");
+
+        return "redirect:/auth";
+    }
+
+
+    // =========================================================
+    // Google Authenticator確認画面
+    // =========================================================
+
+    @GetMapping("/register/totp/verify")
+    public String registerTotpVerifyPage() {
+        return "register-totp";
+    }
+
+
+    // =========================================================
+    // TOTP QRコード
+    // =========================================================
+
+    @GetMapping("/register/totp/qr")
+    public ResponseEntity<byte[]> registerTotpQr(
+            HttpSession session) {
+
+        Object usernameObject =
+                session.getAttribute(
+                        "totpRegisterUsername");
+
+        if (usernameObject == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String username =
+                usernameObject.toString();
+
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
+
+        if (optionalUser.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        User user = optionalUser.get();
+
+        String secretKey =
+                user.getTotpSecret();
+
+        if (secretKey == null ||
+                secretKey.isBlank()) {
+
+            return ResponseEntity.notFound().build();
+        }
+
+        String qrCodeUrl =
+                totpService.generateQrCodeUrl(
+                        "NewAuthLab",
+                        user.getUsername(),
+                        secretKey);
+
+        try {
+
+            byte[] qrCodeImage =
+                    qrCodeService.generateQrCode(
+                            qrCodeUrl,
+                            300,
+                            300);
+
+            return ResponseEntity
+                    .ok()
+                    .contentType(MediaType.IMAGE_PNG)
+                    .body(qrCodeImage);
+
+        } catch (WriterException | IOException e) {
+
+            return ResponseEntity
+                    .internalServerError()
+                    .build();
+        }
+    }
+
+
+    // =========================================================
+    // ログイン成功処理
+    // =========================================================
+
+    private void loginSuccess(
+            User user,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        user.getUsername(),
+                        null,
+                        Collections.emptyList());
+
+        SecurityContext context =
+                SecurityContextHolder.createEmptyContext();
+
+        context.setAuthentication(authentication);
+
+        SecurityContextHolder.setContext(context);
+
+        securityContextRepository.saveContext(
+                context,
+                request,
+                response);
+    }
 }

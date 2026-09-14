@@ -12,6 +12,7 @@
     <title>ユーザー登録</title>
 
     <style>
+
         * {
             box-sizing: border-box;
         }
@@ -93,6 +94,7 @@
         .login-link a:hover {
             text-decoration: underline;
         }
+
     </style>
 
 </head>
@@ -105,11 +107,6 @@
 
         <form action="/register"
               method="post">
-
-            <!-- CSRF対策 -->
-            <input type="hidden"
-                   th:name="${_csrf.parameterName}"
-                   th:value="${_csrf.token}">
 
             <!-- ユーザー名 -->
             <div class="form-group">
@@ -169,7 +166,9 @@
             <!-- 登録 -->
             <button type="submit"
                     class="button">
+
                 登録
+
             </button>
 
         </form>
@@ -182,7 +181,7 @@
 
         </div>
 
-        <!-- ログイン -->
+        <!-- 認証方式選択に戻る -->
         <div class="login-link">
 
             <a href="/auth">
