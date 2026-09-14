@@ -43,7 +43,8 @@ public class AuthController {
 
     @PostMapping("/auth/select")
     public String selectAuth(
-            @RequestParam String authType) {
+            @RequestParam String authType,
+            HttpSession session) {
 
         switch (authType) {
 
@@ -74,7 +75,10 @@ public class AuthController {
 
             // 三要素認証
             case "three-factor":
-                return "redirect:/login/three-factor";
+           	 // セッションにPOSTで贈られた値を入れる
+
+                session.setAttribute("authState", "three-factor-now-step1");   
+                return "redirect:/login";
 
 
             // 想定外の値が送られた場合
@@ -140,6 +144,7 @@ public class AuthController {
 
     @GetMapping("/login/three-factor")
     public String threeFactorLogin() {
+     	System.out.println("1");
         return "login/three-factor";
     }
 
@@ -216,15 +221,18 @@ public class AuthController {
             HttpSession session) {
 
     	 // セッションにPOSTで贈られた値を入れる
-        session.setAttribute("authType", authType);   
-        
+        session.setAttribute("authState", authType);   
+   
         if (authType.equals("possession-biometric")) {
-        	
-            return "redirect:/login";
+        	//所有　+生体
+        	 return "redirect:/email";
+           
         }else if (authType.equals("knowledge-possession")) {
-
+        	//知識　+　所有
+        	 return "redirect:/login";
 		}else if (authType.equals("knowledge-biometric")) {
-		
+			//知識　＋　生体
+			 return "redirect:/login";
 		}
 
     
