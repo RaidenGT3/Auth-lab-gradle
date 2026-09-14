@@ -1028,6 +1028,11 @@ public class AuthController {
 	     return "redirect:/";
 	 }
 	 
+	 @GetMapping("/login/one-factor/password")
+	 public String oneFactorPasswordPage() {
+	     return "login/one-factor-password";
+	 }
+	 
 	// =========================
 	// 一要素認証 - Email OTP送信
 	// =========================
@@ -1090,6 +1095,15 @@ public class AuthController {
 	    );
 
 	    return "redirect:/login/one-factor/email/code";
+	}
+	
+	// =========================
+	// 一要素認証 - Email OTP入力画面
+	// =========================
+
+	@GetMapping("/login/one-factor/email")
+	public String oneFactorEmailPage() {
+	    return "login/one-factor-email";
 	}
 	
 	// =========================
@@ -1196,6 +1210,25 @@ public class AuthController {
 	    );
 
 	    return "redirect:/";
+	}
+	
+	// =========================
+	// 一要素認証 - Email OTPコード入力画面
+	// =========================
+
+	@GetMapping("/login/one-factor/email/code")
+	public String oneFactorEmailCodePage(
+	        HttpSession session,
+	        Model model) {
+
+	    Object usernameObject =
+	            session.getAttribute("oneFactorEmailUsername");
+
+	    if (usernameObject == null) {
+	        return "redirect:/login/one-factor/email";
+	    }
+
+	    return "login/one-factor-email-code";
 	}
 	
 	// =========================
@@ -1513,6 +1546,33 @@ public class AuthController {
 	      */
 	     return "redirect:/register/passkey";
 	 }
+	 
+	// =========================
+	// TOTP認証コード入力画面
+	// =========================
+
+	@GetMapping("/register/totp/verify")
+	public String registerTotpVerifyPage() {
+	    return "register-totp";
+	}
+	
+	// =========================
+	// Passkey登録画面
+	// =========================
+
+	@GetMapping("/register/passkey")
+	public String registerPasskeyPage(
+	        HttpSession session) {
+
+	    Object usernameObject =
+	            session.getAttribute("passkeyRegisterUsername");
+
+	    if (usernameObject == null) {
+	        return "redirect:/register";
+	    }
+
+	    return "register-passkey";
+	}
 
 	
 	// =========================
