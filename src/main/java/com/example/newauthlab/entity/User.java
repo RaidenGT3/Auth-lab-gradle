@@ -19,7 +19,11 @@ public class User {
     private String username;
 
     @Column(nullable = false, length = 255)
-    private String password;
+    private String password1_hash;
+    @Column(nullable = false, length = 255)
+    private String password2_hash;
+    @Column(nullable = false, length = 255)
+    private String password3_hash;
 
     public Long getId() {
         return id;
@@ -33,11 +37,27 @@ public class User {
         this.username = username;
     }
 
-    public String getPassword() {
-        return password;
+    public String getPassword1_hash() {
+        return password1_hash;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setPassword1_Hash(String password) {
+        this.password1_hash = password;
+    }
+    
+    public String getPassword2_hash() {
+        return password2_hash;
+    }
+
+    public void setPassword2_Hash(String password) {
+        this.password2_hash = password;
+    }
+    
+    public String getPassword3_hash() {
+        return password3_hash;
+    }
+
+    public void setPassword3_Hash(String password) {
+        this.password3_hash = password;
     }
 }
