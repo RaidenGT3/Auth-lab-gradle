@@ -1,5 +1,7 @@
 package com.example.newauthlab.controller;
 
+import jakarta.servlet.http.HttpSession;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -201,5 +203,32 @@ public class AuthController {
 
         // 登録後はログイン画面へ
         return "redirect:/login";
+    }
+    
+    
+    
+    // =========================
+    // 2要素認証の組み合わせをセッションに保存する
+    // =========================
+    @PostMapping("/login/two-factor")
+    public String selectTwoFactor(
+            @RequestParam String authType,
+            HttpSession session) {
+
+    	 // セッションにPOSTで贈られた値を入れる
+        session.setAttribute("authType", authType);   
+        
+        if (authType.equals("possession-biometric")) {
+        	
+            return "redirect:/login";
+        }else if (authType.equals("knowledge-possession")) {
+
+		}else if (authType.equals("knowledge-biometric")) {
+		
+		}
+
+    
+
+        return "redirect:/login/two-factor";
     }
 }

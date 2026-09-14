@@ -83,7 +83,7 @@
 
 		<h1>二要素認証</h1>
 
-		<form id="authForm">
+		<form action="/login/two-factor" method="post">
 
 			<!-- 知識認証 ＋ 所有認証 -->
 			<label class="auth-option">
@@ -91,7 +91,7 @@
 				<input
 					type="radio"
 					name="authType"
-					value=""
+					value="knowledge-possession"
 					required
 				>
 
@@ -106,7 +106,7 @@
 				<input
 					type="radio"
 					name="authType"
-					value=""
+					value="knowledge-biometric"
 				>
 
 				知識認証 ＋ 生体認証
@@ -120,7 +120,7 @@
 				<input
 					type="radio"
 					name="authType"
-					value=""
+					value="possession-biometric"
 				>
 
 				所有認証 ＋ 生体認証
@@ -138,7 +138,36 @@
 		</form>
 
 	</div>
+<!--	<script>いらん
 
+		document.getElementById("authForm").addEventListener("submit", function (event) {
+
+			event.preventDefault();
+
+			const authType = document.querySelector(
+				'input[name="authType"]:checked'
+			).value;
+
+
+			if (authType === "knowledge-possession") {
+
+				//window.location.href = "/login";
+				alert("このページはDLCで配信予定です");
+
+			} else if (authType === "knowledge-biometric") {
+
+				//window.location.href = "/email";
+				alert("このページはまだだよ製品版を買ってね");
+
+			} else if (authType === "possession-biometric") {
+
+				alert("近日アップデート予定！");
+
+			}
+
+		});
+
+	</script>-->
 </body>
 
 </html>
