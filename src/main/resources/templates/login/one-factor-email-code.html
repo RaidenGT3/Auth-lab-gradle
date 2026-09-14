@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>メール認証コード</title>
+</head>
+
+<body>
+
+    <h1>メール認証コード</h1>
+
+    <p>
+        登録済みのメールアドレスに送信された
+        6桁の認証コードを入力してください。
+    </p>
+
+    <form th:action="@{/login/one-factor/email/code}"
+          method="post">
+
+        <div>
+            <label for="code">
+                認証コード
+            </label>
+
+            <input
+                type="text"
+                id="code"
+                name="code"
+                required
+                maxlength="6"
+                minlength="6"
+                pattern="[0-9]{6}"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="6桁のコード">
+        </div>
+
+        <br>
+
+        <button type="submit">
+            認証する
+        </button>
+
+    </form>
+
+    <br>
+
+    <a th:href="@{/login/one-factor/email}">
+        認証コードをもう一度送信する
+    </a>
+
+    <br>
+
+    <a th:href="@{/login/one-factor}">
+        認証方法の選択に戻る
+    </a>
+
+    <br>
+
+    <a th:href="@{/auth}">
+        認証方式選択に戻る
+    </a>
+
+</body>
+
+</html>

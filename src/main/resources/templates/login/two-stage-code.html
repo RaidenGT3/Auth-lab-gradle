@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>認証コード入力</title>
+</head>
+
+<body>
+
+<h1>認証コード入力</h1>
+
+<p>
+    登録されているメールアドレスに認証コードを送信しました。
+</p>
+
+<p>
+    メールに記載されている6桁の認証コードを入力してください。
+</p>
+
+<form action="/login/two-stage/code" method="post">
+
+    <div>
+        <label>認証コード</label>
+        <input type="text"
+               name="code"
+               inputmode="numeric"
+               pattern="[0-9]{6}"
+               maxlength="6"
+               required>
+    </div>
+
+    <button type="submit">
+        認証
+    </button>
+
+</form>
+
+<p>
+    <a href="/login/two-stage">
+        二段階認証の最初に戻る
+    </a>
+</p>
+
+</body>
+
+</html>

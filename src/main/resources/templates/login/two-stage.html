@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>二段階認証ログイン</title>
+</head>
+<body>
+
+<h1>二段階認証ログイン</h1>
+
+<form action="/login/two-stage" method="post">
+
+    <div>
+        <label>ユーザー名</label>
+        <input type="text"
+               name="username"
+               required>
+    </div>
+
+    <div>
+        <label>パスワード</label>
+        <input type="password"
+               name="password"
+               required>
+    </div>
+
+    <button type="submit">
+        次へ
+    </button>
+
+</form>
+
+<p>
+    <a href="/auth">
+        認証方式選択に戻る
+    </a>
+</p>
+
+</body>
+</html>

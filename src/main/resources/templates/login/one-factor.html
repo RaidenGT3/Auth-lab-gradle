@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja"
+      xmlns:th="http://www.thymeleaf.org">
 
 <head>
 
 	<meta charset="UTF-8">
 
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="viewport"
+	      content="width=device-width, initial-scale=1.0">
 
 	<title>一要素認証</title>
 
@@ -37,6 +39,11 @@
 			margin-bottom: 30px;
 			text-align: center;
 			font-size: 26px;
+		}
+
+		.description {
+			margin-bottom: 25px;
+			text-align: center;
 		}
 
 		.auth-option {
@@ -71,6 +78,20 @@
 		.button:hover {
 			background-color: #555;
 		}
+
+		.back {
+			margin-top: 20px;
+			text-align: center;
+		}
+
+		.back a {
+			color: #333;
+			text-decoration: none;
+		}
+
+		.back a:hover {
+			text-decoration: underline;
+		}
 	</style>
 
 </head>
@@ -81,75 +102,52 @@
 
 		<h1>一要素認証</h1>
 
-		<form id="authForm">
+		<p class="description">
+			認証方法を1つ選択してください。
+		</p>
 
-			<!-- 知識認証 -->
+		<form th:action="@{/login/one-factor/select}"
+		      method="post">
+
+			<!-- パスワード認証 -->
 			<label class="auth-option">
 
-				<input type="radio" name="authType" value="knowledge" required>
+				<input type="radio"
+				       name="factor"
+				       value="password"
+				       required>
 
-				知識認証
+				パスワード
 
 			</label>
 
-
-			<!-- 所有認証 -->
+			<!-- メール認証 -->
 			<label class="auth-option">
 
-				<input type="radio" name="authType" value="possession">
+				<input type="radio"
+				       name="factor"
+				       value="email">
 
-				所有物認証
+				メール認証コード
 
 			</label>
 
-
-			<!-- 生体認証 -->
-			<label class="auth-option">
-
-				<input type="radio" name="authType" value="biometric">
-
-				生体認証
-
-			</label>
-
-
-			<button type="submit" class="button">
+			<button type="submit"
+			        class="button">
 				次へ
 			</button>
 
 		</form>
 
+		<div class="back">
+
+			<a th:href="@{/auth}">
+				認証方式選択に戻る
+			</a>
+
+		</div>
+
 	</div>
-
-
-	<script>
-
-		document.getElementById("authForm").addEventListener("submit", function (event) {
-
-			event.preventDefault();
-
-			const authType = document.querySelector(
-				'input[name="authType"]:checked'
-			).value;
-
-
-			if (authType === "knowledge") {
-
-				window.location.href = "/login";
-
-			} else if (authType === "possession") {
-
-				window.location.href = "/email";
-
-			} else if (authType === "biometric") {
-
-				alert("生体認証は現在準備中です");
-
-			}
-
-		});
-
-	</script>
 
 </body>
 

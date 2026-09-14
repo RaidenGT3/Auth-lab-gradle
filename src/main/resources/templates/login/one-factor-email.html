@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>メール認証ログイン</title>
+</head>
+
+<body>
+
+    <h1>メール認証でログイン</h1>
+
+    <p>
+        登録済みのメールアドレスに認証コードを送信します。
+    </p>
+
+    <form th:action="@{/login/one-factor/email}"
+          method="post">
+
+        <div>
+            <label for="username">
+                ユーザー名
+            </label>
+
+            <input
+                type="text"
+                id="username"
+                name="username"
+                required
+                autocomplete="username">
+        </div>
+
+        <br>
+
+        <button type="submit">
+            認証コードを送信
+        </button>
+
+    </form>
+
+    <br>
+
+    <a th:href="@{/login/one-factor}">
+        認証方法の選択に戻る
+    </a>
+
+    <br>
+
+    <a th:href="@{/auth}">
+        認証方式選択に戻る
+    </a>
+
+</body>
+
+</html>

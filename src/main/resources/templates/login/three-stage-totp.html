@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>三段階認証 - Google Authenticator</title>
+</head>
+
+<body>
+
+<h1>三段階認証</h1>
+
+<h2>③ Google Authenticator</h2>
+
+<p>
+    Google Authenticatorに表示されている
+    6桁の認証コードを入力してください。
+</p>
+
+<form action="/login/three-stage/totp" method="post">
+
+    <div>
+        <label>認証コード</label>
+
+        <input type="text"
+               name="code"
+               inputmode="numeric"
+               pattern="[0-9]{6}"
+               maxlength="6"
+               autocomplete="one-time-code"
+               required>
+    </div>
+
+    <br>
+
+    <button type="submit">
+        ログイン
+    </button>
+
+</form>
+
+<div th:if="${error}">
+    <p th:text="${error}"></p>
+</div>
+
+<p>
+    <a href="/login/three-stage">
+        三段階認証の最初に戻る
+    </a>
+</p>
+
+</body>
+
+</html>

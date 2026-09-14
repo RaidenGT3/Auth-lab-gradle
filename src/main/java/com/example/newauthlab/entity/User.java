@@ -15,20 +15,52 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // =========================
+    // ユーザー名
+    // =========================
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
+    // =========================
+    // パスワード1
+    // =========================
     @Column(nullable = false, length = 255)
-    private String password1_hash;
-    @Column(nullable = false, length = 255)
-    private String password2_hash;
-    @Column(nullable = false, length = 255)
-    private String password3_hash;
+    private String password;
 
+    // =========================
+    // パスワード2
+    // =========================
+    @Column(nullable = false, length = 255)
+    private String password2;
+
+    // =========================
+    // パスワード3
+    // =========================
+    @Column(nullable = false, length = 255)
+    private String password3;
+
+    // =========================
+    // メールアドレス
+    // =========================
+    @Column(nullable = false, unique = true, length = 255)
+    private String email;
+
+    // =========================
+    // Google Authenticator用秘密鍵
+    // =========================
+    @Column(length = 100)
+    private String totpSecret;
+
+    // =========================
+    // ID
+    // =========================
     public Long getId() {
         return id;
     }
 
+    // =========================
+    // username
+    // =========================
     public String getUsername() {
         return username;
     }
@@ -37,27 +69,58 @@ public class User {
         this.username = username;
     }
 
-    public String getPassword1_hash() {
-        return password1_hash;
+    // =========================
+    // password1
+    // =========================
+    public String getPassword() {
+        return password;
     }
 
-    public void setPassword1_Hash(String password) {
-        this.password1_hash = password;
-    }
-    
-    public String getPassword2_hash() {
-        return password2_hash;
+    public void setPassword(String password) {
+        this.password = password;
     }
 
-    public void setPassword2_Hash(String password) {
-        this.password2_hash = password;
-    }
-    
-    public String getPassword3_hash() {
-        return password3_hash;
+    // =========================
+    // password2
+    // =========================
+    public String getPassword2() {
+        return password2;
     }
 
-    public void setPassword3_Hash(String password) {
-        this.password3_hash = password;
+    public void setPassword2(String password2) {
+        this.password2 = password2;
+    }
+
+    // =========================
+    // password3
+    // =========================
+    public String getPassword3() {
+        return password3;
+    }
+
+    public void setPassword3(String password3) {
+        this.password3 = password3;
+    }
+
+    // =========================
+    // email
+    // =========================
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    // =========================
+    // TOTP
+    // =========================
+    public String getTotpSecret() {
+        return totpSecret;
+    }
+
+    public void setTotpSecret(String totpSecret) {
+        this.totpSecret = totpSecret;
     }
 }

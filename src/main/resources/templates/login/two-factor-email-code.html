@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Email OTP認証</title>
+</head>
+<body>
+
+<h1>二要素認証</h1>
+
+<h2>第2段階：Email OTP</h2>
+
+<p>メールに届いた6桁の認証コードを入力してください。</p>
+
+<form th:action="@{/login/two-factor/email/code}"
+      method="post">
+
+    <input type="text"
+           name="code"
+           maxlength="6"
+           pattern="[0-9]{6}"
+           required>
+
+    <br><br>
+
+    <p th:if="${error}"
+       th:text="${error}">
+    </p>
+
+    <button type="submit">
+        認証
+    </button>
+
+</form>
+
+</body>
+</html>
