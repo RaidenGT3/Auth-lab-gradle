@@ -30,6 +30,7 @@ public class SecurityConfig {
 								"/login/two-factor",
 								"/login/three-factor",
 								"/login",
+								"/password",
 								"/register",
 								"/email",
 								"/otp",
@@ -45,17 +46,30 @@ public class SecurityConfig {
 							String authState = (String) request.getSession()
 									.getAttribute("authState");
 							System.out.println("authState: " + authState);
-
+							if (authState == null) {
+								response.sendRedirect("/index");
+								return;
+							}
 							switch (authState) {
 
 							// =========================
-							// 一要素認証
+							// 多段階認証
 							// =========================
-							case "one-factor":
-								response.sendRedirect("/index");
+							case "two-stage":
+								request.getSession().setAttribute(
+								        "loginUsername",
+								        authentication.getName()
+								);
+								response.sendRedirect("/password");
+								break;
+							case "three-stage-now-step1":
+								request.getSession().setAttribute(
+								        "loginUsername",
+								        authentication.getName()
+								);
+								response.sendRedirect("/password");
 								break;
 
-								
 							// =========================
 							// 二要素認証
 							// =========================
@@ -70,7 +84,7 @@ public class SecurityConfig {
 								break;
 
 							// 所有 + 生体の場合はEmailControllerで処理するためここでは処理しない
-								
+
 							// =========================
 							// 三要素認証
 							// =========================
@@ -82,15 +96,15 @@ public class SecurityConfig {
 
 								response.sendRedirect("/email");
 								break;
-								
-								// 3要素認証 2回目（所有認証）成功後 の処理はEmailControllerで行うためここでは処理しない
-								//生体認証については完成次第考える
+
+							// 3要素認証 2回目（所有認証）成功後 の処理はEmailControllerで行うためここでは処理しない
+							//生体認証については完成次第考える
 							case "three-factor-now-step3":
 								response.sendRedirect("/index");
 								break;
 
 							default:
-								
+
 								//それ以外ならログイン成功がめんへ　
 								response.sendRedirect("/index");
 								break;
