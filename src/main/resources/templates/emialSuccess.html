@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>認証完了</title>
+</head>
+
+<body>
+
+	<h1>認証完了</h1>
+
+	<p>認証に成功しました。</p>
+
+	<p>メールアドレスの確認が完了しました。</p>
+
+	<!-- 認証選択画面へ -->
+	<a th:href="@{/auth}">
+		<button type="button">認証選択画面へ</button>
+	</a>
+
+
+</body>
+
+</html>

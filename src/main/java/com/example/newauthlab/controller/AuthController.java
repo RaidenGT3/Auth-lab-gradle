@@ -1246,20 +1246,24 @@ public class AuthController {
         return "redirect:/auth";
     }
 
+		// 二段階認証
+		case "two-stage":
+			session.setAttribute("authState", "two-stage");
+			return "redirect:/login";
 
-    // =========================
-    // ユーザー登録画面
-    // =========================
+		// 三段階認証
+		case "three-stage":
+			session.setAttribute("authState", "three-stage-now-step1");
 
-    @GetMapping("/register")
-    public String register() {
-        return "register";
-    }
+			return "redirect:/login";
 
+		// 一要素認証
+		case "one-factor":
+			return "redirect:/login/one-factor";
 
-    // =========================
-    // ユーザー登録処理
-    // =========================
+		// 二要素認証
+		case "two-factor":
+			return "redirect:/login/two-factor";
 
     @PostMapping("/register")
     public String registerUser(
@@ -1277,14 +1281,20 @@ public class AuthController {
 
         if (userRepository.existsByUsername(username)) {
 
-            model.addAttribute(
-                    "error",
-                    "そのユーザー名はすでに使用されています"
-            );
+		// 想定外の値が送られた場合
+		default:
+			return "redirect:/auth";
+		}
+	}
 
-            return "register";
-        }
+	// =========================
+	// 一段階認証ログイン画面
+	// =========================
 
+	@GetMapping("/login/one-stage")
+	public String oneStageLogin() {
+		return "login";
+	}
 
         // =========================
         // 新しいユーザーを作成
@@ -1292,7 +1302,6 @@ public class AuthController {
 
         User user = new User();
 
-        user.setUsername(username);
 
 
         // パスワードをBCryptで暗号化
@@ -1321,6 +1330,10 @@ public class AuthController {
 
         userRepository.save(user);
 
+	@GetMapping("/login/one-factor")
+	public String oneFactorLogin() {
+		return "login/one-factor";
+	}
 
         // =========================
         // TOTP登録に必要な情報をセッションへ保存

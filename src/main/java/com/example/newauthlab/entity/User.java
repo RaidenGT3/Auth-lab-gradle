@@ -15,30 +15,52 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // =========================
+    // ユーザー名
+    // =========================
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
+    // =========================
+    // パスワード1
+    // =========================
     @Column(nullable = false, length = 255)
     private String password;
-    
+
+    // =========================
+    // パスワード2
+    // =========================
     @Column(nullable = false, length = 255)
     private String password2;
 
+    // =========================
+    // パスワード3
+    // =========================
     @Column(nullable = false, length = 255)
     private String password3;
 
+    // =========================
     // メールアドレス
+    // =========================
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    // Google Authenticator用の秘密鍵
+    // =========================
+    // Google Authenticator用秘密鍵
+    // =========================
     @Column(length = 100)
     private String totpSecret;
 
+    // =========================
+    // ID
+    // =========================
     public Long getId() {
         return id;
     }
 
+    // =========================
+    // username
+    // =========================
     public String getUsername() {
         return username;
     }
@@ -47,28 +69,37 @@ public class User {
         this.username = username;
     }
 
+    // =========================
+    // password1
+    // =========================
     public String getPassword() {
         return password;
-    }
-    
-    public String getPassword2() {
-        return password2;
-    }
-    
-    public String getPassword3() {
-        return password3;
     }
 
     public void setPassword(String password) {
         this.password = password;
     }
-    
-    public void setPassword2(String password2) {
-        this.password = password2;
+
+    // =========================
+    // password2
+    // =========================
+    public String getPassword2() {
+        return password2;
     }
-    
+
+    public void setPassword2(String password2) {
+        this.password2 = password2;
+    }
+
+    // =========================
+    // password3
+    // =========================
+    public String getPassword3() {
+        return password3;
+    }
+
     public void setPassword3(String password3) {
-        this.password = password3;
+        this.password3 = password3;
     }
 
     // =========================

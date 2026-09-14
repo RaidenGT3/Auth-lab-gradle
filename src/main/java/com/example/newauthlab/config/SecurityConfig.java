@@ -24,46 +24,41 @@ public class SecurityConfig {
 
             .authorizeHttpRequests(auth -> auth
 
+                // =========================
                 // 認証不要
-            		.requestMatchers(
-            			    "/",
-            			    "/auth",
-            			    "/auth/select",
-            			    "/login/**",
-
-            			    // ユーザー登録
-            			    "/register",
-            			    "/register/totp",
-            			    "/register/totp/verify",
-            			    "/register/totp/qr",
-
-            			    "/css/**",
-            			    "/js/**",
-
-            			    // Passkeyログイン時に使用
-            			    "/webauthn/authenticate/options"
-            			).permitAll()
-
-                // Passkey登録はログイン済みユーザーのみ
+                // =========================
                 .requestMatchers(
-                    "/register/passkey",
-                    "/webauthn/register/options",
-                    "/webauthn/register"
-                ).authenticated()
+                    "/",
+                    "/auth",
+                    "/auth/select",
 
+                    // ログイン
+                    "/login/**",
+
+                    // =========================
+                    // ユーザー登録
+                    // =========================
+                    "/register",
+                    "/register/totp",
+                    "/register/totp/verify",
+                    "/register/totp/qr",
+
+                    // CSS / JavaScript
+                    "/css/**",
+                    "/js/**"
+                ).permitAll()
+
+                // =========================
                 // その他は認証必須
+                // =========================
                 .anyRequest().authenticated()
             )
 
-            // WebAuthn / Passkey
-            .webAuthn(webAuthn -> webAuthn
-                .rpId("localhost")
-                .allowedOrigins("http://localhost:8080")
-            )
-
+            // =========================
             // ログアウト
+            // =========================
             .logout(logout -> logout
-                .logoutSuccessUrl("/login")
+                .logoutSuccessUrl("/auth")
                 .permitAll()
             );
 
