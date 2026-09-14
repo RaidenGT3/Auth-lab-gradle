@@ -1,51 +1,57 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja"
+      xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
-    <title>一要素認証 - Email OTP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>メール認証ログイン</title>
 </head>
 
 <body>
 
-<h1>一要素認証</h1>
+    <h1>メール認証でログイン</h1>
 
-<h2>Email OTP</h2>
+    <p>
+        登録済みのメールアドレスに認証コードを送信します。
+    </p>
 
-<p>登録されているメールアドレスに認証コードを送信します。</p>
+    <form th:action="@{/login/one-factor/email}"
+          method="post">
 
-<form action="/login/one-factor/email" method="post">
+        <div>
+            <label for="username">
+                ユーザー名
+            </label>
 
-    <div>
-        <label>ユーザー名</label>
-        <input type="text"
-               name="username"
-               required>
-    </div>
+            <input
+                type="text"
+                id="username"
+                name="username"
+                required
+                autocomplete="username">
+        </div>
+
+        <br>
+
+        <button type="submit">
+            認証コードを送信
+        </button>
+
+    </form>
 
     <br>
 
-    <button type="submit">
-        認証コードを送信
-    </button>
-
-</form>
-
-<div th:if="${error}">
-    <p th:text="${error}"></p>
-</div>
-
-<p>
-    <a href="/login/one-factor">
-        認証要素の選択に戻る
+    <a th:href="@{/login/one-factor}">
+        認証方法の選択に戻る
     </a>
-</p>
 
-<p>
-    <a href="/auth">
+    <br>
+
+    <a th:href="@{/auth}">
         認証方式選択に戻る
     </a>
-</p>
 
 </body>
 

@@ -11,8 +11,8 @@ public class WebAuthnConfig {
 
     @Bean
     public JdbcPublicKeyCredentialUserEntityRepository
-            jdbcPublicKeyCredentialUserEntityRepository(
-                    JdbcOperations jdbcOperations) {
+    jdbcPublicKeyCredentialUserEntityRepository(
+            JdbcOperations jdbcOperations) {
 
         return new JdbcPublicKeyCredentialUserEntityRepository(
                 jdbcOperations
@@ -21,8 +21,8 @@ public class WebAuthnConfig {
 
     @Bean
     public JdbcUserCredentialRepository
-            jdbcUserCredentialRepository(
-                    JdbcOperations jdbcOperations) {
+    jdbcUserCredentialRepository(
+            JdbcOperations jdbcOperations) {
 
         return new JdbcUserCredentialRepository(
                 jdbcOperations

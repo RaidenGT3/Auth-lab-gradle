@@ -6,27 +6,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Passkey登録</title>
+    <title>Passkeyログイン</title>
 </head>
 
 <body>
 
-    <h1>Passkeyを登録</h1>
+    <h1>Passkeyでログイン</h1>
 
     <p>
-        ユーザー：
-        <strong th:text="${username}"></strong>
+        登録済みのPasskeyを使用してログインします。
     </p>
 
-    <p>
-        この端末にPasskeyを登録します。
-    </p>
-
-    <button type="button" id="registerPasskey">
-        Passkeyを登録
+    <button type="button" id="loginPasskey">
+        Passkeyでログイン
     </button>
 
     <p id="message"></p>
+
 
     <script>
 
@@ -81,7 +77,7 @@
 
 
         document
-            .getElementById("registerPasskey")
+            .getElementById("loginPasskey")
             .addEventListener(
                 "click",
                 async function () {
@@ -89,18 +85,19 @@
                     const message =
                         document.getElementById("message");
 
+
                     try {
 
-                        message.textContent =
-                            "Passkey登録を開始しています……";
-
-
                         /*
-                         * ① 登録オプション取得
+                         * ① 認証オプションを取得
                          */
+                        message.textContent =
+                            "Passkey認証を開始しています……";
+
+
                         const optionsResponse =
                             await fetch(
-                                "/webauthn/register/options",
+                                "/webauthn/authenticate/options",
                                 {
                                     method: "POST",
                                     headers: {
@@ -114,7 +111,7 @@
                         if (!optionsResponse.ok) {
 
                             throw new Error(
-                                "Passkey登録オプションの取得に失敗しました。"
+                                "Passkey認証オプションの取得に失敗しました。"
                             );
                         }
 
@@ -125,42 +122,49 @@
 
                         const publicKey =
                             options.publicKey || options;
-							
-							publicKey.authenticatorSelection = {
-							    residentKey: "required",
-							    userVerification: "preferred"
-							};
 
 
                         /*
                          * ② challengeを変換
                          */
-                        publicKey.challenge =
-                            base64UrlToArrayBuffer(
-                                publicKey.challenge
-                            );
+                        if (publicKey.challenge) {
 
-
-                        /*
-                         * ③ user.idを変換
-                         */
-                        if (
-                            publicKey.user &&
-                            publicKey.user.id
-                        ) {
-
-                            publicKey.user.id =
+                            publicKey.challenge =
                                 base64UrlToArrayBuffer(
-                                    publicKey.user.id
+                                    publicKey.challenge
                                 );
                         }
 
 
                         /*
-                         * ④ ブラウザでPasskey作成
+                         * ③ allowCredentialsを変換
+                         */
+                        if (
+                            publicKey.allowCredentials
+                        ) {
+
+                            publicKey.allowCredentials =
+                                publicKey.allowCredentials
+                                    .map(function (credential) {
+
+                                        return {
+
+                                            ...credential,
+
+                                            id:
+                                                base64UrlToArrayBuffer(
+                                                    credential.id
+                                                )
+                                        };
+                                    });
+                        }
+
+
+                        /*
+                         * ④ ブラウザでPasskey認証
                          */
                         const credential =
-                            await navigator.credentials.create(
+                            await navigator.credentials.get(
                                 {
                                     publicKey:
                                         publicKey
@@ -171,13 +175,13 @@
                         if (!credential) {
 
                             throw new Error(
-                                "Passkeyの登録がキャンセルされました。"
+                                "Passkey認証がキャンセルされました。"
                             );
                         }
 
 
                         /*
-                         * ⑤ 登録情報を作成
+                         * ⑤ 認証情報を作成
                          */
                         const credentialData = {
 
@@ -195,10 +199,10 @@
 
                                     response: {
 
-                                        attestationObject:
+                                        authenticatorData:
                                             arrayBufferToBase64Url(
                                                 credential.response
-                                                    .attestationObject
+                                                    .authenticatorData
                                             ),
 
                                         clientDataJSON:
@@ -207,12 +211,20 @@
                                                     .clientDataJSON
                                             ),
 
-                                        transports:
+                                        signature:
+                                            arrayBufferToBase64Url(
+                                                credential.response
+                                                    .signature
+                                            ),
+
+                                        userHandle:
                                             credential.response
-                                                .getTransports
-                                                ? credential.response
-                                                    .getTransports()
-                                                : []
+                                                .userHandle
+                                                ? arrayBufferToBase64Url(
+                                                    credential.response
+                                                        .userHandle
+                                                )
+                                                : null
                                     },
 
                                     type:
@@ -225,19 +237,17 @@
                                     authenticatorAttachment:
                                         credential
                                             .authenticatorAttachment
-                                },
-
-                                label: "Passkey"
+                                }
                             }
                         };
 
 
                         /*
-                         * ⑥ Spring Securityへ登録
+                         * ⑥ Spring Securityで認証
                          */
-                        const registerResponse =
+                        const authenticateResponse =
                             await fetch(
-                                "/webauthn/register",
+                                "/webauthn/authenticate",
                                 {
                                     method: "POST",
 
@@ -254,38 +264,31 @@
                             );
 
 
-                        if (!registerResponse.ok) {
+                        if (!authenticateResponse.ok) {
 
                             const errorText =
-                                await registerResponse.text();
+                                await authenticateResponse.text();
 
                             console.error(
-                                "Passkey登録エラー:",
+                                "Passkey認証エラー:",
                                 errorText
                             );
 
                             throw new Error(
-                                "Passkeyの登録に失敗しました。"
+                                "Passkey認証に失敗しました。"
                             );
                         }
 
 
                         /*
-                         * ⑦ 登録成功
+                         * ⑦ ログイン成功
                          */
                         message.textContent =
-                            "Passkeyの登録が完了しました。";
+                            "ログインしました。";
 
 
-                        setTimeout(
-                            function () {
-
-                                window.location.href =
-                                    "/";
-
-                            },
-                            1500
-                        );
+                        window.location.href =
+                            "/";
 
 
                     } catch (error) {
@@ -294,8 +297,9 @@
 
                         message.textContent =
                             error.message ||
-                            "Passkey登録中にエラーが発生しました。";
+                            "Passkey認証中にエラーが発生しました。";
                     }
+
                 }
             );
 

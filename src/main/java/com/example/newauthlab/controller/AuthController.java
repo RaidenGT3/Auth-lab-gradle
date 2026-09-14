@@ -1202,10 +1202,10 @@ public class AuthController {
 	// Passkey登録画面
 	// =========================
 
-	@GetMapping("/register/passkey")
-	public String registerPasskey() {
-	    return "register-passkey";
-	}
+	//@GetMapping("/register/passkey")
+	//public String registerPasskey() {
+	    //return "register-passkey";
+	//}
 
 
     // =========================

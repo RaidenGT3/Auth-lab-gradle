@@ -1,58 +1,69 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja"
+      xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
-    <title>一要素認証 - Email OTP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>メール認証コード</title>
 </head>
 
 <body>
 
-<h1>一要素認証</h1>
+    <h1>メール認証コード</h1>
 
-<h2>Email OTP</h2>
+    <p>
+        登録済みのメールアドレスに送信された
+        6桁の認証コードを入力してください。
+    </p>
 
-<p>登録されているメールアドレスに認証コードを送信しました。</p>
+    <form th:action="@{/login/one-factor/email/verify}"
+          method="post">
 
-<p>メールに記載されている6桁の認証コードを入力してください。</p>
+        <div>
+            <label for="code">
+                認証コード
+            </label>
 
-<form action="/login/one-factor/email/code" method="post">
+            <input
+                type="text"
+                id="code"
+                name="code"
+                required
+                maxlength="6"
+                minlength="6"
+                pattern="[0-9]{6}"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="6桁のコード">
+        </div>
 
-    <div>
-        <label>認証コード</label>
+        <br>
 
-        <input type="text"
-               name="code"
-               inputmode="numeric"
-               pattern="[0-9]{6}"
-               maxlength="6"
-               autocomplete="one-time-code"
-               required>
-    </div>
+        <button type="submit">
+            認証する
+        </button>
+
+    </form>
 
     <br>
 
-    <button type="submit">
-        認証
-    </button>
-
-</form>
-
-<div th:if="${error}">
-    <p th:text="${error}"></p>
-</div>
-
-<p>
-    <a href="/login/one-factor/email">
-        Email OTPの最初に戻る
+    <a th:href="@{/login/one-factor/email}">
+        認証コードをもう一度送信する
     </a>
-</p>
 
-<p>
-    <a href="/login/one-factor">
-        認証要素の選択に戻る
+    <br>
+
+    <a th:href="@{/login/one-factor}">
+        認証方法の選択に戻る
     </a>
-</p>
+
+    <br>
+
+    <a th:href="@{/auth}">
+        認証方式選択に戻る
+    </a>
 
 </body>
 

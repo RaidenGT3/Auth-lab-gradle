@@ -1,18 +1,22 @@
+/**
+ * 
+ */
 document
-    .getElementById("registerPasskey")
+    .getElementById("loginPasskey")
     .addEventListener("click", async () => {
 
-        const message = document.getElementById("message");
+        const message =
+            document.getElementById("message");
 
         try {
+            // ---------------------------------
+            // 1. 認証用オプションを取得
+            // ---------------------------------
             message.textContent =
-                "Passkey登録情報を取得しています...";
+                "Passkey認証情報を取得しています...";
 
-            // ---------------------------------
-            // 1. 登録用オプションを取得
-            // ---------------------------------
             const optionsResponse = await fetch(
-                "/webauthn/register/options",
+                "/webauthn/authenticate/options",
                 {
                     method: "POST",
                     headers: {
@@ -23,15 +27,15 @@ document
 
             if (!optionsResponse.ok) {
                 throw new Error(
-                    "Passkey登録情報の取得に失敗しました"
+                    "Passkey認証情報の取得に失敗しました"
                 );
             }
 
-            const options = await optionsResponse.json();
+            const options =
+                await optionsResponse.json();
 
-            // Spring Securityから返された
-            // PublicKeyCredentialCreationOptions
-            const publicKey = options.publicKey || options;
+            const publicKey =
+                options.publicKey || options;
 
             // ---------------------------------
             // Base64URL → Uint8Array
@@ -39,7 +43,9 @@ document
             function base64UrlToUint8Array(base64Url) {
 
                 const padding =
-                    "=".repeat((4 - base64Url.length % 4) % 4);
+                    "=".repeat(
+                        (4 - base64Url.length % 4) % 4
+                    );
 
                 const base64 =
                     (base64Url + padding)
@@ -51,12 +57,13 @@ document
 
                 return Uint8Array.from(
                     binary,
-                    character => character.charCodeAt(0)
+                    character =>
+                        character.charCodeAt(0)
                 );
             }
 
             // ---------------------------------
-            // 2. WebAuthn用のデータを変換
+            // 2. Challengeを変換
             // ---------------------------------
             if (publicKey.challenge) {
                 publicKey.challenge =
@@ -65,43 +72,37 @@ document
                     );
             }
 
-            if (
-                publicKey.user &&
-                publicKey.user.id
-            ) {
-                publicKey.user.id =
-                    base64UrlToUint8Array(
-                        publicKey.user.id
-                    );
-            }
+            // ---------------------------------
+            // 3. allowCredentialsを変換
+            // ---------------------------------
+            if (publicKey.allowCredentials) {
 
-            if (publicKey.excludeCredentials) {
-
-                publicKey.excludeCredentials =
-                    publicKey.excludeCredentials.map(
+                publicKey.allowCredentials =
+                    publicKey.allowCredentials.map(
                         credential => ({
                             ...credential,
-                            id: base64UrlToUint8Array(
-                                credential.id
-                            )
+                            id:
+                                base64UrlToUint8Array(
+                                    credential.id
+                                )
                         })
                     );
             }
 
             // ---------------------------------
-            // 3. Passkey作成
+            // 4. Passkey認証開始
             // ---------------------------------
             message.textContent =
-                "Passkey登録を開始しています...";
+                "Passkey認証を開始しています...";
 
             const credential =
-                await navigator.credentials.create({
+                await navigator.credentials.get({
                     publicKey: publicKey
                 });
 
             if (!credential) {
                 throw new Error(
-                    "Passkeyの作成に失敗しました"
+                    "Passkey認証に失敗しました"
                 );
             }
 
@@ -113,7 +114,8 @@ document
                 let binary = "";
 
                 for (const byte of bytes) {
-                    binary += String.fromCharCode(byte);
+                    binary +=
+                        String.fromCharCode(byte);
                 }
 
                 return btoa(binary)
@@ -123,9 +125,9 @@ document
             }
 
             // ---------------------------------
-            // 4. 登録データを作成
+            // 5. 認証結果を作成
             // ---------------------------------
-            const registrationData = {
+            const authenticationData = {
 
                 id: credential.id,
 
@@ -146,27 +148,45 @@ document
                             )
                         ),
 
-                    attestationObject:
+                    authenticatorData:
                         uint8ArrayToBase64Url(
                             new Uint8Array(
                                 credential.response
-                                    .attestationObject
+                                    .authenticatorData
                             )
-                        )
+                        ),
+
+                    signature:
+                        uint8ArrayToBase64Url(
+                            new Uint8Array(
+                                credential.response
+                                    .signature
+                            )
+                        ),
+
+                    userHandle:
+                        credential.response.userHandle
+                            ? uint8ArrayToBase64Url(
+                                new Uint8Array(
+                                    credential.response
+                                        .userHandle
+                                )
+                            )
+                            : null
                 },
 
                 type: credential.type
             };
 
             // ---------------------------------
-            // 5. サーバーへ登録
+            // 6. サーバーへ認証結果を送信
             // ---------------------------------
             message.textContent =
-                "Passkeyをサーバーに登録しています...";
+                "Passkey認証結果を確認しています...";
 
-            const registerResponse =
+            const loginResponse =
                 await fetch(
-                    "/webauthn/register",
+                    "/login/webauthn",
                     {
                         method: "POST",
 
@@ -177,43 +197,45 @@ document
 
                         body:
                             JSON.stringify(
-                                registrationData
+                                authenticationData
                             )
                     }
                 );
 
-            if (!registerResponse.ok) {
+            // ---------------------------------
+            // 7. ログイン結果
+            // ---------------------------------
+            if (!loginResponse.ok) {
 
                 const errorText =
-                    await registerResponse.text();
+                    await loginResponse.text();
 
                 throw new Error(
-                    "Passkey登録に失敗しました"
-                    + (errorText
-                        ? "\n" + errorText
-                        : "")
+                    "Passkeyログインに失敗しました"
+                    + (
+                        errorText
+                            ? "\n" + errorText
+                            : ""
+                    )
                 );
             }
 
-            // ---------------------------------
-            // 登録完了
-            // ---------------------------------
             message.textContent =
-                "Passkeyの登録が完了しました。";
+                "Passkeyログインに成功しました。";
 
             setTimeout(() => {
-                window.location.href = "/login";
-            }, 1500);
+                window.location.href = "/";
+            }, 1000);
 
         } catch (error) {
 
             console.error(
-                "Passkey登録エラー:",
+                "Passkeyログインエラー:",
                 error
             );
 
             message.textContent =
-                "Passkey登録に失敗しました: "
+                "Passkeyログインに失敗しました: "
                 + error.message;
         }
     });
