@@ -102,9 +102,6 @@ public class AuthController {
             case "two-factor":
                 return "redirect:/login/two-factor";
 
-            // 三要素認証
-            case "three-factor":
-                return "redirect:/login/three-factor";
 
             // 想定外の値が送られた場合
             default:
@@ -1268,6 +1265,8 @@ public class AuthController {
     public String registerUser(
             @RequestParam String username,
             @RequestParam String password,
+            @RequestParam String password2,
+            @RequestParam String password3,
             @RequestParam String email,
             HttpSession session,
             Model model) {
@@ -1297,9 +1296,9 @@ public class AuthController {
 
 
         // パスワードをBCryptで暗号化
-        user.setPassword(
-                passwordEncoder.encode(password)
-        );
+        user.setPassword(passwordEncoder.encode(password));
+        user.setPassword2(passwordEncoder.encode(password2));
+        user.setPassword3(passwordEncoder.encode(password3));
 
 
         // メールアドレスを保存

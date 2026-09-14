@@ -20,6 +20,12 @@ public class User {
 
     @Column(nullable = false, length = 255)
     private String password;
+    
+    @Column(nullable = false, length = 255)
+    private String password2;
+
+    @Column(nullable = false, length = 255)
+    private String password3;
 
     // メールアドレス
     @Column(nullable = false, unique = true, length = 255)
@@ -44,9 +50,25 @@ public class User {
     public String getPassword() {
         return password;
     }
+    
+    public String getPassword2() {
+        return password2;
+    }
+    
+    public String getPassword3() {
+        return password3;
+    }
 
     public void setPassword(String password) {
         this.password = password;
+    }
+    
+    public void setPassword2(String password2) {
+        this.password = password2;
+    }
+    
+    public void setPassword3(String password3) {
+        this.password = password3;
     }
 
     // =========================
