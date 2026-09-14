@@ -1237,19 +1237,8 @@ public class AuthController {
 
     @GetMapping("/login/two-factor")
     public String twoFactorLogin() {
-        return "login/two-factor";
+        return "login/two-factor-password";
     }
-
-
-    // =========================
-    // 三要素認証ログイン画面
-    // =========================
-
-    @GetMapping("/login/three-factor")
-    public String threeFactorLogin() {
-        return "login/three-factor";
-    }
-
 
     // =========================
     // 通常ログイン画面
@@ -1410,26 +1399,20 @@ public class AuthController {
 	// =========================
 	// Google Authenticator登録確認
 	// =========================
-
-	 
 	 @PostMapping("/register/totp/verify")
 	 public String verifyRegisterTotp(
 	         @RequestParam String code,
 	         HttpSession session,
-	         HttpServletRequest request,
-	         HttpServletResponse response,
 	         Model model) {
 
 	     Object usernameObject =
 	             session.getAttribute("totpRegisterUsername");
 
 	     if (usernameObject == null) {
-
 	         model.addAttribute(
 	                 "error",
 	                 "登録情報が見つかりません。もう一度登録してください"
 	         );
-
 	         return "redirect:/register";
 	     }
 
@@ -1440,12 +1423,10 @@ public class AuthController {
 	             userRepository.findByUsername(username);
 
 	     if (optionalUser.isEmpty()) {
-
 	         model.addAttribute(
 	                 "error",
 	                 "ユーザーが見つかりません"
 	         );
-
 	         return "redirect:/register";
 	     }
 
@@ -1458,10 +1439,8 @@ public class AuthController {
 	     int totpCode;
 
 	     try {
-
 	         totpCode =
 	                 Integer.parseInt(codeString);
-
 	     } catch (NumberFormatException e) {
 
 	         model.addAttribute(
@@ -1488,53 +1467,12 @@ public class AuthController {
 	         return "register-totp";
 	     }
 
+	     // TOTP認証成功
+	     // Passkey登録は行わない
 
-	     /*
-	      * TOTP認証成功
-	      *
-	      * Passkey登録では、
-	      * Spring Securityが「現在認証されているユーザー」
-	      * を必要とするため、ここで一時的に認証状態にする。
-	      */
+	     session.removeAttribute("totpRegisterUsername");
 
-	     Authentication authentication =
-	             new UsernamePasswordAuthenticationToken(
-	                     user.getUsername(),
-	                     null,
-	                     java.util.Collections.emptyList()
-	             );
-
-	     SecurityContext context =
-	             SecurityContextHolder.createEmptyContext();
-
-	     context.setAuthentication(authentication);
-
-	     SecurityContextHolder.setContext(context);
-
-	     securityContextRepository.saveContext(
-	             context,
-	             request,
-	             response
-	     );
-
-
-	     /*
-	      * Passkey登録用の一時セッション情報
-	      */
-	     session.setAttribute(
-	             "passkeyRegisterUsername",
-	             user.getUsername()
-	     );
-
-	     session.removeAttribute(
-	             "totpRegisterUsername"
-	     );
-
-
-	     /*
-	      * Passkey登録画面へ
-	      */
-	     return "redirect:/register/passkey";
+	     return "redirect:/auth";
 	 }
 	 
 	// =========================
@@ -1619,29 +1557,6 @@ public class AuthController {
 	}
 	
 	// =========================
-	// 二要素認証方式の選択
-	// =========================
-	@PostMapping("/login/two-factor/select")
-	public String selectTwoFactorMethod(
-	        @RequestParam String method) {
-
-	    switch (method) {
-
-	        case "password-email":
-	            return "redirect:/login/two-factor/password";
-
-	        case "password-passkey":
-	            return "redirect:/login/two-factor/password-passkey";
-
-	        case "email-passkey":
-	            return "redirect:/login/two-factor/email-passkey";
-
-	        default:
-	            return "redirect:/login/two-factor";
-	    }
-	}
-	
-	// =========================
 	// 二要素認証
 	// 第1段階 - Password
 	// =========================
@@ -1652,39 +1567,21 @@ public class AuthController {
 	        HttpSession session,
 	        Model model) {
 
-	    Optional<User> optionalUser =
-	            userRepository.findByUsername(username);
+	    Optional<User> optionalUser = userRepository.findByUsername(username);
 
 	    if (optionalUser.isEmpty()) {
-
-	        model.addAttribute(
-	                "error",
-	                "ユーザー名またはパスワードが正しくありません"
-	        );
-
+	        model.addAttribute("error", "ユーザー名またはパスワードが正しくありません");
 	        return "login/two-factor-password";
 	    }
 
 	    User user = optionalUser.get();
 
-	    if (!passwordEncoder.matches(
-	            password,
-	            user.getPassword())) {
-
-	        model.addAttribute(
-	                "error",
-	                "ユーザー名またはパスワードが正しくありません"
-	        );
-
+	    if (!passwordEncoder.matches(password, user.getPassword())) {
+	        model.addAttribute("error", "ユーザー名またはパスワードが正しくありません");
 	        return "login/two-factor-password";
 	    }
 
-	    // Password認証成功
-	    // 次のEmail OTPで使用するユーザーを保存
-	    session.setAttribute(
-	            "twoFactorUsername",
-	            user.getUsername()
-	    );
+	    session.setAttribute("twoFactorUsername", user.getUsername());
 
 	    return "redirect:/login/two-factor/email";
 	}
@@ -1703,18 +1600,15 @@ public class AuthController {
 	        HttpSession session,
 	        Model model) {
 
-	    Object usernameObject =
-	            session.getAttribute("twoFactorUsername");
+	    Object usernameObject = session.getAttribute("twoFactorUsername");
 
 	    if (usernameObject == null) {
 	        return "redirect:/login/two-factor";
 	    }
 
-	    String username =
-	            usernameObject.toString();
+	    String username = usernameObject.toString();
 
-	    Optional<User> optionalUser =
-	            userRepository.findByUsername(username);
+	    Optional<User> optionalUser = userRepository.findByUsername(username);
 
 	    if (optionalUser.isEmpty()) {
 	        return "redirect:/login/two-factor";
@@ -1722,29 +1616,22 @@ public class AuthController {
 
 	    User user = optionalUser.get();
 
-	    if (user.getEmail() == null ||
-	            user.getEmail().isBlank()) {
-
-	        model.addAttribute(
-	                "error",
-	                "メールアドレスが登録されていません"
-	        );
-
+	    if (user.getEmail() == null || user.getEmail().isBlank()) {
+	        model.addAttribute("error", "メールアドレスが登録されていません");
 	        return "login/two-factor-email";
 	    }
 
-	    String code =
-	            mailService.generateCode();
+	    String code = mailService.generateCode();
 
 	    verificationCodeService.saveCode(
-	            session,
-	            user.getEmail(),
-	            code
+	        session,
+	        user.getEmail(),
+	        code
 	    );
 
 	    mailService.sendVerificationCode(
-	            user.getEmail(),
-	            code
+	        user.getEmail(),
+	        code
 	    );
 
 	    return "redirect:/login/two-factor/email/code";
@@ -1752,6 +1639,7 @@ public class AuthController {
 	
 	@GetMapping("/login/two-factor/email")
 	public String twoFactorEmailPage(HttpSession session) {
+
 	    if (session.getAttribute("twoFactorUsername") == null) {
 	        return "redirect:/login/two-factor";
 	    }
