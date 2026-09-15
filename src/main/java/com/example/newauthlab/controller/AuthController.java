@@ -60,6 +60,11 @@ public class AuthController {
     public String root() {
         return "redirect:/auth";
     }
+    
+    @GetMapping("/home")
+    public String home() {
+        return "index";
+    }
 
 
     // =========================================================
@@ -148,7 +153,7 @@ public class AuthController {
 
         loginSuccess(user, request, response);
 
-        return "redirect:/";
+        return "redirect:/home";
     }
 
 
@@ -272,7 +277,7 @@ public class AuthController {
 
         session.removeAttribute("twoStageUsername");
 
-        return "redirect:/";
+        return "redirect:/home";
     }
 
 
@@ -452,7 +457,7 @@ public class AuthController {
 
         session.removeAttribute("threeStageUsername");
 
-        return "redirect:/";
+        return "redirect:/home";
     }
 
 
@@ -530,7 +535,7 @@ public class AuthController {
 
         loginSuccess(user, request, response);
 
-        return "redirect:/";
+        return "redirect:/home";
     }
 
 
@@ -672,7 +677,7 @@ public class AuthController {
         session.removeAttribute(
                 "oneFactorEmailUsername");
 
-        return "redirect:/";
+        return "redirect:/home";
     }
 
 
@@ -886,7 +891,7 @@ public class AuthController {
         session.removeAttribute(
                 "twoFactorUsername");
 
-        return "redirect:/";
+        return "redirect:/home";
     }
 
 

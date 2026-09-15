@@ -3,55 +3,170 @@
       xmlns:th="http://www.thymeleaf.org">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>メール認証ログイン</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f5f5f5;
+            font-family: Arial, "Noto Sans JP", sans-serif;
+        }
+
+        .container {
+            width: 420px;
+            padding: 40px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 26px;
+        }
+
+        .description {
+            margin-bottom: 30px;
+            text-align: center;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 13px;
+            border: none;
+            border-radius: 6px;
+            background-color: #333;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #555;
+        }
+
+        .error {
+            margin-top: 15px;
+            color: #d00;
+            text-align: center;
+        }
+
+        .back {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .back a {
+            color: #333;
+            text-decoration: none;
+        }
+
+        .back a:hover {
+            text-decoration: underline;
+        }
+
+        .back a + a {
+            display: block;
+            margin-top: 10px;
+        }
+
+    </style>
+
 </head>
 
 <body>
 
-    <h1>メール認証でログイン</h1>
+    <div class="container">
 
-    <p>
-        登録済みのメールアドレスに認証コードを送信します。
-    </p>
+        <h1>メール認証でログイン</h1>
 
-    <form th:action="@{/login/one-factor/email}"
-          method="post">
+        <p class="description">
+            登録済みのメールアドレスに<br>
+            認証コードを送信します。
+        </p>
 
-        <div>
-            <label for="username">
-                ユーザー名
-            </label>
+        <form th:action="@{/login/one-factor/email}"
+              method="post">
 
-            <input
-                type="text"
-                id="username"
-                name="username"
-                required
-                autocomplete="username">
+            <div class="form-group">
+
+                <label for="username">
+                    ユーザー名
+                </label>
+
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    required
+                    autocomplete="username">
+
+            </div>
+
+            <button type="submit"
+                    class="button">
+                認証コードを送信
+            </button>
+
+        </form>
+
+        <div class="error"
+             th:if="${error}">
+
+            <p th:text="${error}"></p>
+
         </div>
 
-        <br>
+        <div class="back">
 
-        <button type="submit">
-            認証コードを送信
-        </button>
+            <a th:href="@{/login/one-factor}">
+                認証方法の選択に戻る
+            </a>
 
-    </form>
+            <a th:href="@{/auth}">
+                認証方式選択に戻る
+            </a>
 
-    <br>
+        </div>
 
-    <a th:href="@{/login/one-factor}">
-        認証方法の選択に戻る
-    </a>
-
-    <br>
-
-    <a th:href="@{/auth}">
-        認証方式選択に戻る
-    </a>
+    </div>
 
 </body>
 

@@ -42,7 +42,7 @@ public class User {
     // =========================
     // メールアドレス
     // =========================
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, length = 255)
     private String email;
 
     // =========================
