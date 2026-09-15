@@ -46,12 +46,6 @@ public class User {
     private String email;
 
     // =========================
-    // Google Authenticator用秘密鍵
-    // =========================
-    @Column(length = 100)
-    private String totpSecret;
-
-    // =========================
     // ID
     // =========================
     public Long getId() {
@@ -113,14 +107,4 @@ public class User {
         this.email = email;
     }
 
-    // =========================
-    // TOTP
-    // =========================
-    public String getTotpSecret() {
-        return totpSecret;
-    }
-
-    public void setTotpSecret(String totpSecret) {
-        this.totpSecret = totpSecret;
-    }
 }
