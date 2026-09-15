@@ -35,9 +35,14 @@ public class SecurityConfig {
 								"/email",
 								"/otp",
 								"/send-otp",
+								"/experiment/**",//攻撃するためにつけたやつ　
+
 								"/verify-otp")
 						.permitAll()
 						.anyRequest().authenticated())
+			    .csrf(csrf -> csrf
+			            .ignoringRequestMatchers("/experiment/**")
+			        )
 				.formLogin(form -> form
 						.loginPage("/login")
 						.successHandler((request, response, authentication) -> {
