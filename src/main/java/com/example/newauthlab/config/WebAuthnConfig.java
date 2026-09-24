@@ -9,23 +9,23 @@ import org.springframework.security.web.webauthn.management.JdbcUserCredentialRe
 @Configuration
 public class WebAuthnConfig {
 
-    @Bean
-    public JdbcPublicKeyCredentialUserEntityRepository
-    jdbcPublicKeyCredentialUserEntityRepository(
-            JdbcOperations jdbcOperations) {
+	@Bean
+	public JdbcPublicKeyCredentialUserEntityRepository
+	jdbcPublicKeyCredentialUserEntityRepository(
+			JdbcOperations jdbcOperations) {
 
-        return new JdbcPublicKeyCredentialUserEntityRepository(
-                jdbcOperations
-        );
-    }
+		return new JdbcPublicKeyCredentialUserEntityRepository(
+				jdbcOperations
+				);
+	}
 
-    @Bean
-    public JdbcUserCredentialRepository
-    jdbcUserCredentialRepository(
-            JdbcOperations jdbcOperations) {
+	@Bean
+	public JdbcUserCredentialRepository
+	jdbcUserCredentialRepository(
+			JdbcOperations jdbcOperations) {
 
-        return new JdbcUserCredentialRepository(
-                jdbcOperations
-        );
-    }
+		return new JdbcUserCredentialRepository(
+				jdbcOperations
+				);
+	}
 }

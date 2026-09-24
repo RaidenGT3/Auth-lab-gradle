@@ -8,51 +8,51 @@ import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 @Service
 public class TotpService {
 
-    private final GoogleAuthenticator googleAuthenticator;
+	private final GoogleAuthenticator googleAuthenticator;
 
-    public TotpService() {
-        this.googleAuthenticator = new GoogleAuthenticator();
-    }
+	public TotpService() {
+		this.googleAuthenticator = new GoogleAuthenticator();
+	}
 
-    /**
-     * Google Authenticator用の秘密鍵を生成する
-     */
-    public String generateSecretKey() {
+	/**
+	 * Google Authenticator用の秘密鍵を生成する
+	 */
+	public String generateSecretKey() {
 
-        GoogleAuthenticatorKey key =
-                googleAuthenticator.createCredentials();
+		GoogleAuthenticatorKey key =
+				googleAuthenticator.createCredentials();
 
-        return key.getKey();
-    }
+		return key.getKey();
+	}
 
-    /**
-     * Google Authenticator登録用のQRコードURLを生成する
-     */
-    public String generateQrCodeUrl(
-            String appName,
-            String username,
-            String secretKey) {
+	/**
+	 * Google Authenticator登録用のQRコードURLを生成する
+	 */
+	public String generateQrCodeUrl(
+			String appName,
+			String username,
+			String secretKey) {
 
-        return "otpauth://totp/"
-                + appName
-                + ":"
-                + username
-                + "?secret="
-                + secretKey
-                + "&issuer="
-                + appName;
-    }
+		return "otpauth://totp/"
+				+ appName
+				+ ":"
+				+ username
+				+ "?secret="
+				+ secretKey
+				+ "&issuer="
+				+ appName;
+	}
 
-    /**
-     * Google Authenticatorの6桁コードを確認する
-     */
-    public boolean verifyCode(
-            String secretKey,
-            int code) {
+	/**
+	 * Google Authenticatorの6桁コードを確認する
+	 */
+	public boolean verifyCode(
+			String secretKey,
+			int code) {
 
-        return googleAuthenticator.authorize(
-                secretKey,
-                code
-        );
-    }
+		return googleAuthenticator.authorize(
+				secretKey,
+				code
+				);
+	}
 }

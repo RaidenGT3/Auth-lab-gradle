@@ -10,19 +10,19 @@ import org.springframework.security.web.webauthn.management.UserCredentialReposi
 @Configuration
 public class PasskeyConfig {
 
-    /**
-     * WebAuthnのユーザー情報を管理するRepository
-     */
-    @Bean
-    public PublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository() {
-        return new MapPublicKeyCredentialUserEntityRepository();
-    }
+	/**
+	 * WebAuthnのユーザー情報を管理するRepository
+	 */
+	@Bean
+	public PublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository() {
+		return new MapPublicKeyCredentialUserEntityRepository();
+	}
 
-    /**
-     * WebAuthnのCredential情報を管理するRepository
-     */
-    @Bean
-    public UserCredentialRepository userCredentialRepository() {
-        return new MapUserCredentialRepository();
-    }
+	/**
+	 * WebAuthnのCredential情報を管理するRepository
+	 */
+	@Bean
+	public UserCredentialRepository userCredentialRepository() {
+		return new MapUserCredentialRepository();
+	}
 }

@@ -9,52 +9,52 @@ import org.springframework.stereotype.Service;
 @Service
 public class MailService {
 
-    private final JavaMailSender mailSender;
+	private final JavaMailSender mailSender;
 
-    public MailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
-
-
-    // =========================
-    // 認証コード生成
-    // =========================
-
-    public String generateCode() {
-
-        Random random = new Random();
-
-        int code = 100000 + random.nextInt(900000);
-
-        return String.valueOf(code);
-    }
+	public MailService(JavaMailSender mailSender) {
+		this.mailSender = mailSender;
+	}
 
 
-    // =========================
-    // 認証コード送信
-    // =========================
+	// =========================
+	// 認証コード生成
+	// =========================
 
-    public void sendVerificationCode(
-            String email,
-            String code) {
+	public String generateCode() {
 
-        SimpleMailMessage message =
-                new SimpleMailMessage();
+		Random random = new Random();
 
-        message.setTo(email);
+		int code = 100000 + random.nextInt(900000);
 
-        message.setSubject(
-                "認証コードのお知らせ"
-        );
+		return String.valueOf(code);
+	}
 
-        message.setText(
-                "ログインに必要な認証コードをお知らせします。\n\n"
-                + "認証コード："
-                + code
-                + "\n\n"
-                + "このコードをログイン画面に入力してください。"
-        );
 
-        mailSender.send(message);
-    }
+	// =========================
+	// 認証コード送信
+	// =========================
+
+	public void sendVerificationCode(
+			String email,
+			String code) {
+
+		SimpleMailMessage message =
+				new SimpleMailMessage();
+
+		message.setTo(email);
+
+		message.setSubject(
+				"認証コードのお知らせ"
+				);
+
+		message.setText(
+				"ログインに必要な認証コードをお知らせします。\n\n"
+						+ "認証コード："
+						+ code
+						+ "\n\n"
+						+ "このコードをログイン画面に入力してください。"
+				);
+
+		mailSender.send(message);
+	}
 }

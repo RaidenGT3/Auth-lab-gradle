@@ -10,58 +10,58 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)
-            throws Exception {
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http)
+			throws Exception {
 
-        http
-            .csrf(csrf -> csrf.disable())
+		http
+		.csrf(csrf -> csrf.disable())
 
-            .authorizeHttpRequests(auth -> auth
+		.authorizeHttpRequests(auth -> auth
 
-                // =========================
-                // 認証不要
-                // =========================
-                .requestMatchers(
-                    "/",
-                    "/auth",
-                    "/auth/select",
+				// =========================
+				// 認証不要
+				// =========================
+				.requestMatchers(
+						"/",
+						"/auth",
+						"/auth/select",
 
-                    // ログイン
-                    "/login/**",
+						// ログイン
+						"/login/**",
 
-                    // =========================
-                    // ユーザー登録
-                    // =========================
-                    "/register",
-                    "/register/totp",
-                    "/register/totp/verify",
-                    "/register/totp/qr",
+						// =========================
+						// ユーザー登録
+						// =========================
+						"/register",
+						"/register/totp",
+						"/register/totp/verify",
+						"/register/totp/qr",
 
-                    // CSS / JavaScript
-                    "/css/**",
-                    "/js/**"
-                ).permitAll()
+						// CSS / JavaScript
+						"/css/**",
+						"/js/**"
+						).permitAll()
 
-                // =========================
-                // その他は認証必須
-                // =========================
-                .anyRequest().authenticated()
-            )
+				// =========================
+				// その他は認証必須
+				// =========================
+				.anyRequest().authenticated()
+				)
 
-            // =========================
-            // ログアウト
-            // =========================
-            .logout(logout -> logout
-                .logoutSuccessUrl("/auth")
-                .permitAll()
-            );
+		// =========================
+		// ログアウト
+		// =========================
+		.logout(logout -> logout
+				.logoutSuccessUrl("/auth")
+				.permitAll()
+				);
 
-        return http.build();
-    }
+		return http.build();
+	}
 }

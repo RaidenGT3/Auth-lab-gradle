@@ -7,13 +7,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class HomeController {
 
 
-//    @GetMapping("/")
-//    public String home() {
-//        return "auth-select";
-//    }
+	//    @GetMapping("/")
+	//    public String home() {
+	//        return "auth-select";
+	//    }
 
-    @GetMapping("/index")
-    public String index() {
-        return "index";
-    }
+	@GetMapping("/index")
+	public String index() {
+		return "index";
+	}
 }

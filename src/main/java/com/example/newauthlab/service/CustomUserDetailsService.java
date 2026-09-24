@@ -11,25 +11,25 @@ import com.example.newauthlab.repository.UserRepository;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserRepository userRepository;
+	private final UserRepository userRepository;
 
-    public CustomUserDetailsService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+	public CustomUserDetailsService(UserRepository userRepository) {
+		this.userRepository = userRepository;
+	}
 
-    @Override
-    public UserDetails loadUserByUsername(String username)
-            throws UsernameNotFoundException {
+	@Override
+	public UserDetails loadUserByUsername(String username)
+			throws UsernameNotFoundException {
 
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() ->
-                    new UsernameNotFoundException("ユーザーが見つかりません")
-                );
+		User user = userRepository.findByUsername(username)
+				.orElseThrow(() ->
+				new UsernameNotFoundException("ユーザーが見つかりません")
+						);
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUsername())
-                .password(user.getPassword())
-                .roles("USER")
-                .build();
-    }
+		return org.springframework.security.core.userdetails.User
+				.withUsername(user.getUsername())
+				.password(user.getPassword())
+				.roles("USER")
+				.build();
+	}
 }
