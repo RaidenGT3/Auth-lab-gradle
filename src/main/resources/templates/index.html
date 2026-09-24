@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja"
+      xmlns:th="http://www.thymeleaf.org">
 
 <head>
 
@@ -76,14 +77,14 @@
             ログインしています。
         </p>
 
-        <form action="/logout" method="post">
+		<form th:action="${session.fromAttackSimulator == true ? '/logout-from-attacksimulator' : '/logout'}"
+		      method="post">
 
-            <button type="submit"
-                    class="button">
-                ログアウト
-            </button>
-
-        </form>
+		    <button type="submit"
+		            class="button">
+		        ログアウト
+		    </button>
+		</form>
 
     </div>
 

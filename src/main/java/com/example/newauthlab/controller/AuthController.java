@@ -122,6 +122,10 @@ public class AuthController {
     public String oneStageLoginProcess(
             @RequestParam String username,
             @RequestParam String password,
+            @RequestParam(
+                    value = "fromAttackSimulator",
+                    required = false)
+            String fromAttackSimulator,
             HttpServletRequest request,
             HttpServletResponse response,
             Model model) {
@@ -153,6 +157,13 @@ public class AuthController {
 
         loginSuccess(user, request, response);
 
+        if ("true".equals(fromAttackSimulator)) {
+
+            request.getSession().setAttribute(
+                    "fromAttackSimulator",
+                    true);
+        }
+
         return "redirect:/home";
     }
 
@@ -167,46 +178,86 @@ public class AuthController {
         return "login/two-stage";
     }
 
-    @PostMapping("/login/two-stage")
-    public String twoStageLoginProcess(
-            @RequestParam String username,
-            @RequestParam String password,
-            HttpSession session,
-            Model model) {
+ // =========================================================
+ // 二段階認証
+ // Password1 → Password2
+ // =========================================================
 
-        Optional<User> optionalUser =
-                userRepository.findByUsername(username);
+ @PostMapping("/login/two-stage")
+ public String twoStageLoginProcess(
+         @RequestParam String username,
+         @RequestParam String password,
+         @RequestParam(
+                 value = "fromAttackSimulator",
+                 required = false)
+         String fromAttackSimulator,
+         @RequestParam(
+                 value = "password2",
+                 required = false)
+         String password2,
+         HttpSession session,
+         Model model) {
 
-        if (optionalUser.isEmpty()) {
+     Optional<User> optionalUser =
+             userRepository.findByUsername(username);
 
-            model.addAttribute(
-                    "error",
-                    "ユーザー名またはパスワードが正しくありません");
+     if (optionalUser.isEmpty()) {
 
-            return "login/two-stage";
-        }
+         model.addAttribute(
+                 "error",
+                 "ユーザー名またはパスワードが正しくありません");
 
-        User user = optionalUser.get();
+         return "login/two-stage";
+     }
 
-        // Password1
-        if (!passwordEncoder.matches(
-                password,
-                user.getPassword())) {
+     User user = optionalUser.get();
 
-            model.addAttribute(
-                    "error",
-                    "ユーザー名またはパスワードが正しくありません");
+     // =====================================================
+     // Password1確認
+     // =====================================================
 
-            return "login/two-stage";
-        }
+     if (!passwordEncoder.matches(
+             password,
+             user.getPassword())) {
 
-        // 1段階目成功
-        session.setAttribute(
-                "twoStageUsername",
-                user.getUsername());
+         model.addAttribute(
+                 "error",
+                 "ユーザー名またはパスワードが正しくありません");
 
-        return "redirect:/login/two-stage/password2";
-    }
+         return "login/two-stage";
+     }
+
+     // =====================================================
+     // 1段階目成功
+     // =====================================================
+
+     session.setAttribute(
+             "twoStageUsername",
+             user.getUsername());
+
+	  // =====================================================
+	  // attacksimulatorから来た場合
+	  // =====================================================
+	
+	  if ("true".equals(fromAttackSimulator)) {
+	
+	      session.setAttribute(
+	              "fromAttackSimulator",
+	              true);
+	  }
+	
+	  // Password2も保存
+	  if ("true".equals(fromAttackSimulator)
+	          && password2 != null
+	          && !password2.isBlank()) {
+	
+	      session.setAttribute(
+	              "fromAttackSimulatorPassword2",
+	              password2);
+	  }
+	
+	  return "redirect:/login/two-stage/password2";
+	 }
 
 
     // =========================================================
@@ -281,184 +332,314 @@ public class AuthController {
     }
 
 
-    // =========================================================
-    // 三段階認証
-    // Password1 → Password2 → Password3
-    // =========================================================
+ // =========================================================
+ // 三段階認証
+ // Password1 → Password2 → Password3
+ // =========================================================
 
-    @GetMapping("/login/three-stage")
-    public String threeStageLogin() {
-        return "login/three-stage";
-    }
+ @GetMapping("/login/three-stage")
+ public String threeStageLogin() {
 
-
-    // =========================================================
-    // 三段階認証
-    // 第1段階 Password1
-    // =========================================================
-
-    @PostMapping("/login/three-stage")
-    public String threeStageLoginProcess(
-            @RequestParam String username,
-            @RequestParam String password,
-            HttpSession session,
-            Model model) {
-
-        Optional<User> optionalUser =
-                userRepository.findByUsername(username);
-
-        if (optionalUser.isEmpty()) {
-
-            model.addAttribute(
-                    "error",
-                    "ユーザー名またはパスワードが正しくありません");
-
-            return "login/three-stage";
-        }
-
-        User user = optionalUser.get();
-
-        if (!passwordEncoder.matches(
-                password,
-                user.getPassword())) {
-
-            model.addAttribute(
-                    "error",
-                    "ユーザー名またはパスワードが正しくありません");
-
-            return "login/three-stage";
-        }
-
-        session.setAttribute(
-                "threeStageUsername",
-                user.getUsername());
-
-        return "redirect:/login/three-stage/password2";
-    }
+     return "login/three-stage";
+ }
 
 
-    // =========================================================
-    // 三段階認証
-    // 第2段階 Password2
-    // =========================================================
+ // =========================================================
+ // 三段階認証
+ // Password1確認
+ // =========================================================
 
-    @GetMapping("/login/three-stage/password2")
-    public String threeStagePassword2(
-            HttpSession session) {
+ @PostMapping("/login/three-stage")
+ public String threeStageLoginProcess(
+         @RequestParam String username,
+         @RequestParam String password,
+         @RequestParam(
+                 value = "fromAttackSimulator",
+                 required = false)
+         String fromAttackSimulator,
+         @RequestParam(
+                 value = "password2",
+                 required = false)
+         String password2,
+         @RequestParam(
+                 value = "password3",
+                 required = false)
+         String password3,
+         HttpSession session,
+         Model model) {
 
-        if (session.getAttribute("threeStageUsername") == null) {
-            return "redirect:/login/three-stage";
-        }
+     Optional<User> optionalUser =
+             userRepository.findByUsername(username);
 
-        return "login/three-stage-password2";
-    }
+     if (optionalUser.isEmpty()) {
+
+         model.addAttribute(
+                 "error",
+                 "ユーザー名またはパスワードが正しくありません");
+
+         return "login/three-stage";
+     }
+
+     User user = optionalUser.get();
+
+     // =====================================================
+     // Password1確認
+     // =====================================================
+
+     if (!passwordEncoder.matches(
+             password,
+             user.getPassword())) {
+
+         model.addAttribute(
+                 "error",
+                 "ユーザー名またはパスワードが正しくありません");
+
+         return "login/three-stage";
+     }
+
+     // =====================================================
+     // 1段階目成功
+     // =====================================================
+
+     session.setAttribute(
+             "threeStageUsername",
+             user.getUsername());
+
+     // =====================================================
+     // attacksimulatorから来た場合
+     // =====================================================
+
+     if ("true".equals(fromAttackSimulator)) {
+
+         session.setAttribute(
+                 "fromAttackSimulator",
+                 true);
+
+         if (password2 != null
+                 && !password2.isBlank()) {
+
+             session.setAttribute(
+                     "fromAttackSimulatorPassword2",
+                     password2);
+         }
+
+         if (password3 != null
+                 && !password3.isBlank()) {
+
+             session.setAttribute(
+                     "fromAttackSimulatorPassword3",
+                     password3);
+         }
+     }
+
+     return "redirect:/login/three-stage/password2";
+ }
 
 
-    @PostMapping("/login/three-stage/password2")
-    public String verifyThreeStagePassword2(
-            @RequestParam String password2,
-            HttpSession session,
-            Model model) {
+ // =========================================================
+ // 三段階認証
+ // Password2入力画面
+ // =========================================================
 
-        Object usernameObject =
-                session.getAttribute("threeStageUsername");
+ @GetMapping("/login/three-stage/password2")
+ public String threeStagePassword2(
+         HttpSession session) {
 
-        if (usernameObject == null) {
-            return "redirect:/login/three-stage";
-        }
+     if (session.getAttribute(
+             "threeStageUsername") == null) {
 
-        String username =
-                usernameObject.toString();
+         return "redirect:/login/three-stage";
+     }
 
-        Optional<User> optionalUser =
-                userRepository.findByUsername(username);
-
-        if (optionalUser.isEmpty()) {
-            session.removeAttribute("threeStageUsername");
-            return "redirect:/login/three-stage";
-        }
-
-        User user = optionalUser.get();
-
-        if (!passwordEncoder.matches(
-                password2,
-                user.getPassword2())) {
-
-            model.addAttribute(
-                    "error",
-                    "Password2が正しくありません");
-
-            return "login/three-stage-password2";
-        }
-
-        return "redirect:/login/three-stage/password3";
-    }
+     return "login/three-stage-password2";
+ }
 
 
-    // =========================================================
-    // 三段階認証
-    // 第3段階 Password3
-    // =========================================================
+ // =========================================================
+ // 三段階認証
+ // Password2確認
+ // =========================================================
 
-    @GetMapping("/login/three-stage/password3")
-    public String threeStagePassword3(
-            HttpSession session) {
+ @PostMapping("/login/three-stage/password2")
+ public String verifyThreeStagePassword2(
+         @RequestParam String password2,
+         HttpSession session,
+         HttpServletRequest request,
+         HttpServletResponse response,
+         Model model) {
 
-        if (session.getAttribute("threeStageUsername") == null) {
-            return "redirect:/login/three-stage";
-        }
+     Object usernameObject =
+             session.getAttribute(
+                     "threeStageUsername");
 
-        return "login/three-stage-password3";
-    }
+     if (usernameObject == null) {
+
+         return "redirect:/login/three-stage";
+     }
+
+     String username =
+             usernameObject.toString();
+
+     Optional<User> optionalUser =
+             userRepository.findByUsername(username);
+
+     if (optionalUser.isEmpty()) {
+
+         session.removeAttribute(
+                 "threeStageUsername");
+
+         return "redirect:/login/three-stage";
+     }
+
+     User user = optionalUser.get();
+
+     // =====================================================
+     // Password2確認
+     // =====================================================
+
+     if (!passwordEncoder.matches(
+             password2,
+             user.getPassword2())) {
+
+         model.addAttribute(
+                 "error",
+                 "Password2が正しくありません");
+
+         return "login/three-stage-password2";
+     }
+
+     // =====================================================
+     // 2段階目成功
+     // =====================================================
+
+     session.setAttribute(
+             "threeStagePassword2Verified",
+             true);
+
+     return "redirect:/login/three-stage/password3";
+ }
 
 
-    @PostMapping("/login/three-stage/password3")
-    public String verifyThreeStagePassword3(
-            @RequestParam String password3,
-            HttpSession session,
-            HttpServletRequest request,
-            HttpServletResponse response,
-            Model model) {
+ // =========================================================
+ // 三段階認証
+ // Password3入力画面
+ // =========================================================
 
-        Object usernameObject =
-                session.getAttribute("threeStageUsername");
+ @GetMapping("/login/three-stage/password3")
+ public String threeStagePassword3(
+         HttpSession session) {
 
-        if (usernameObject == null) {
-            return "redirect:/login/three-stage";
-        }
+     if (session.getAttribute(
+             "threeStageUsername") == null) {
 
-        String username =
-                usernameObject.toString();
+         return "redirect:/login/three-stage";
+     }
 
-        Optional<User> optionalUser =
-                userRepository.findByUsername(username);
+     if (session.getAttribute(
+             "threeStagePassword2Verified") == null) {
 
-        if (optionalUser.isEmpty()) {
+         return "redirect:/login/three-stage/password2";
+     }
 
-            session.removeAttribute("threeStageUsername");
+     return "login/three-stage-password3";
+ }
 
-            return "redirect:/login/three-stage";
-        }
 
-        User user = optionalUser.get();
+ // =========================================================
+ // 三段階認証
+ // Password3確認
+ // =========================================================
 
-        if (!passwordEncoder.matches(
-                password3,
-                user.getPassword3())) {
+ @PostMapping("/login/three-stage/password3")
+ public String verifyThreeStagePassword3(
+         @RequestParam String password3,
+         HttpSession session,
+         HttpServletRequest request,
+         HttpServletResponse response,
+         Model model) {
 
-            model.addAttribute(
-                    "error",
-                    "Password3が正しくありません");
+     Object usernameObject =
+             session.getAttribute(
+                     "threeStageUsername");
 
-            return "login/three-stage-password3";
-        }
+     if (usernameObject == null) {
 
-        loginSuccess(user, request, response);
+         return "redirect:/login/three-stage";
+     }
 
-        session.removeAttribute("threeStageUsername");
+     Object password2Verified =
+             session.getAttribute(
+                     "threeStagePassword2Verified");
 
-        return "redirect:/home";
-    }
+     if (password2Verified == null) {
+
+         return "redirect:/login/three-stage/password2";
+     }
+
+     String username =
+             usernameObject.toString();
+
+     Optional<User> optionalUser =
+             userRepository.findByUsername(username);
+
+     if (optionalUser.isEmpty()) {
+
+         session.removeAttribute(
+                 "threeStageUsername");
+
+         session.removeAttribute(
+                 "threeStagePassword2Verified");
+
+         return "redirect:/login/three-stage";
+     }
+
+     User user = optionalUser.get();
+
+     // =====================================================
+     // Password3確認
+     // =====================================================
+
+     if (!passwordEncoder.matches(
+             password3,
+             user.getPassword3())) {
+
+         model.addAttribute(
+                 "error",
+                 "Password3が正しくありません");
+
+         return "login/three-stage-password3";
+     }
+
+     // =====================================================
+     // 3段階目成功
+     // =====================================================
+
+     loginSuccess(
+             user,
+             request,
+             response);
+
+     // =====================================================
+     // 一時セッション削除
+     // =====================================================
+
+     session.removeAttribute(
+             "threeStageUsername");
+
+     session.removeAttribute(
+             "threeStagePassword2Verified");
+
+     session.removeAttribute(
+             "fromAttackSimulatorPassword2");
+
+     session.removeAttribute(
+             "fromAttackSimulatorPassword3");
+
+     // fromAttackSimulatorは
+     // /homeでログアウト先を判定するため残す
+
+     return "redirect:/home";
+ }
 
 
     // =========================================================
@@ -1270,5 +1451,20 @@ public class AuthController {
                 context,
                 request,
                 response);
+    }
+    
+    @PostMapping("/logout-from-attacksimulator")
+    public String logoutFromAttackSimulator(
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        HttpSession session =
+                request.getSession(false);
+
+        if (session != null) {
+            session.invalidate();
+        }
+
+        return "redirect:http://localhost:8081/result";
     }
 }
