@@ -7,12 +7,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.newauthlab.entity.User;
 import com.example.newauthlab.repository.UserRepository;
+import com.example.newauthlab.service.AttackLoginTicketService;
 import com.example.newauthlab.service.EmailService;
 
 @Controller
@@ -30,15 +25,22 @@ public class EmailController {
 
 	private final UserRepository userRepository;
 
+	private final AttackLoginTicketService
+	attackLoginTicketService;
+
 	public EmailController(
 			EmailService emailService,
-			UserRepository userRepository) {
+			UserRepository userRepository,
+			AttackLoginTicketService attackLoginTicketService) {
 
 		this.emailService =
 				emailService;
 
 		this.userRepository =
 				userRepository;
+
+		this.attackLoginTicketService =
+				attackLoginTicketService;
 	}
 
 	// =========================================================
@@ -57,30 +59,56 @@ public class EmailController {
 	@PostMapping("/send-otp")
 	public String sendOtp(
 			@RequestParam("email") String email,
+			@RequestParam(
+					value = "fromAttackSimulator",
+					required = false)
+			String fromAttackSimulator,
 			HttpSession session) {
 
+		// =====================================================
 		// 6桁のランダムなOTPを作成
+		// =====================================================
+
 		String otp =
 				String.format(
 						"%06d",
 						new Random().nextInt(1000000));
 
-		// OTPをセッションに保存
+		// =====================================================
+		// セッションに保存
+		// =====================================================
+
 		session.setAttribute(
 				"otp",
 				otp);
 
-		// メールアドレスもセッションに保存
 		session.setAttribute(
 				"email",
 				email);
 
+		// =====================================================
+		// attacksimulatorから来たことを記録
+		// =====================================================
+
+		if ("true".equals(fromAttackSimulator)) {
+
+			session.setAttribute(
+					"fromAttackSimulator",
+					true);
+		} else {
+
+			session.removeAttribute(
+					"fromAttackSimulator");
+		}
+
+		// =====================================================
 		// メール送信
+		// =====================================================
+
 		emailService.sendOtp(
 				email,
 				otp);
 
-		// OTP入力画面へ
 		return "otp";
 	}
 
@@ -94,7 +122,7 @@ public class EmailController {
 	}
 
 	// =========================================================
-	// OTPを確認
+	// OTP確認
 	// =========================================================
 
 	@PostMapping("/verify-otp")
@@ -105,7 +133,10 @@ public class EmailController {
 			HttpServletResponse response,
 			Model model) {
 
-		// セッションに保存しているOTPを取得
+		// =====================================================
+		// セッションからOTP取得
+		// =====================================================
+
 		String savedOtp =
 				(String) session.getAttribute("otp");
 
@@ -124,15 +155,20 @@ public class EmailController {
 		}
 
 		// =====================================================
-		// OTP成功
+		// OTP削除
 		// =====================================================
 
 		session.removeAttribute("otp");
 
+		// =====================================================
+		// メールアドレス取得
+		// =====================================================
+
 		String email =
 				(String) session.getAttribute("email");
 
-		if (email == null || email.isBlank()) {
+		if (email == null
+				|| email.isBlank()) {
 
 			model.addAttribute(
 					"error",
@@ -142,7 +178,7 @@ public class EmailController {
 		}
 
 		// =====================================================
-		// メールアドレスからユーザー取得
+		// User取得
 		// =====================================================
 
 		Optional<User> optionalUser =
@@ -161,7 +197,53 @@ public class EmailController {
 				optionalUser.get();
 
 		// =====================================================
-		// 実ログイン
+		// attacksimulator経由か確認
+		// =====================================================
+
+		boolean fromAttackSimulator =
+				Boolean.TRUE.equals(
+						session.getAttribute(
+								"fromAttackSimulator"));
+
+		// =====================================================
+		// attacksimulator経由
+		// =====================================================
+
+		if (fromAttackSimulator) {
+
+			/*
+			 * ここではまだ通常のブラウザセッションへ
+			 * 直接ログインさせない。
+			 *
+			 * 一時チケットを作成して、
+			 * ブラウザ側の /attack-login に渡す。
+			 */
+
+			String ticket =
+					attackLoginTicketService
+					.createTicket(
+							user.getUsername());
+
+			/*
+			 * 使用済みの目印を削除
+			 */
+			session.removeAttribute(
+					"fromAttackSimulator");
+
+			session.removeAttribute(
+					"email");
+
+			/*
+			 * attacksimulatorのHttpClientが
+			 * このリダイレクト先を取得し、
+			 * ブラウザをここへ移動させる。
+			 */
+			return "redirect:/attack-login?ticket="
+			+ ticket;
+		}
+
+		// =====================================================
+		// 通常のEmail OTPログイン
 		// =====================================================
 
 		loginSuccess(
@@ -169,37 +251,10 @@ public class EmailController {
 				request,
 				response);
 
-		// メールアドレスは不要になったので削除
-		session.removeAttribute("email");
+		session.removeAttribute(
+				"email");
 
-		// =====================================================
-		// 既存の多要素認証処理
-		// =====================================================
-
-		String authState =
-				(String) session.getAttribute(
-						"authState");
-
-		// 3要素認証の2回目（所有認証）
-		if ("three-factor-now-step2"
-				.equals(authState)) {
-
-			session.setAttribute(
-					"authState",
-					"three-factor-now-step3");
-
-			return "redirect:/login";
-
-		} else if ("possession-biometric"
-				.equals(authState)) {
-
-			return "redirect:/login";
-
-		} else {
-
-			// 通常のEmail OTP認証
-			return "redirect:/home";
-		}
+		return "redirect:/home";
 	}
 
 	// =========================================================
@@ -211,38 +266,39 @@ public class EmailController {
 			HttpServletRequest request,
 			HttpServletResponse response) {
 
-		/*
-		 * authenticatedユーザーを作成
-		 *
-		 * 現在のシステムではログインユーザー名を
-		 * Principalとして使用する
-		 */
-		Authentication authentication =
-				new UsernamePasswordAuthenticationToken(
-						user.getUsername(),
-						null,
-						java.util.List.of(
-								new SimpleGrantedAuthority(
-										"ROLE_USER")));
+		org.springframework.security.core.Authentication
+		authentication =
+		new org.springframework.security.authentication
+		.UsernamePasswordAuthenticationToken(
+				user.getUsername(),
+				null,
+				java.util.List.of(
+						new org.springframework.security
+						.core.authority
+						.SimpleGrantedAuthority(
+								"ROLE_USER")));
 
-		SecurityContext securityContext =
-				SecurityContextHolder.createEmptyContext();
+		org.springframework.security.core.context.SecurityContext
+		securityContext =
+		org.springframework.security.core.context
+		.SecurityContextHolder
+		.createEmptyContext();
 
 		securityContext.setAuthentication(
 				authentication);
 
-		SecurityContextHolder.setContext(
+		org.springframework.security.core.context
+		.SecurityContextHolder
+		.setContext(
 				securityContext);
 
-		/*
-		 * HttpSessionへSecurityContextを保存
-		 */
-		HttpSessionSecurityContextRepository
+		org.springframework.security.web.context
+		.HttpSessionSecurityContextRepository
 		securityContextRepository =
-		new HttpSessionSecurityContextRepository();
+		new org.springframework.security.web.context
+		.HttpSessionSecurityContextRepository();
 
-		securityContextRepository
-		.saveContext(
+		securityContextRepository.saveContext(
 				securityContext,
 				request,
 				response);

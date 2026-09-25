@@ -19,9 +19,11 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.newauthlab.entity.User;
 import com.example.newauthlab.repository.UserRepository;
+import com.example.newauthlab.service.AttackLoginTicketService;
 import com.example.newauthlab.service.MailService;
 import com.example.newauthlab.service.QrCodeService;
 import com.example.newauthlab.service.TotpService;
@@ -36,6 +38,8 @@ public class AuthController {
 	private final VerificationCodeService verificationCodeService;
 	private final TotpService totpService;
 	private final QrCodeService qrCodeService;
+	private final AttackLoginTicketService
+	attackLoginTicketService;
 
 	private final SecurityContextRepository securityContextRepository =
 			new HttpSessionSecurityContextRepository();
@@ -46,7 +50,8 @@ public class AuthController {
 			MailService mailService,
 			VerificationCodeService verificationCodeService,
 			TotpService totpService,
-			QrCodeService qrCodeService) {
+			QrCodeService qrCodeService,
+			AttackLoginTicketService attackLoginTicketService) {
 
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
@@ -54,6 +59,7 @@ public class AuthController {
 		this.verificationCodeService = verificationCodeService;
 		this.totpService = totpService;
 		this.qrCodeService = qrCodeService;
+		this.attackLoginTicketService = attackLoginTicketService;
 	}
 
 	@GetMapping("/")
@@ -884,16 +890,29 @@ public class AuthController {
 
 
 	@PostMapping("/login/two-factor/password")
+	@ResponseBody
 	public String twoFactorPassword(
 			@RequestParam String username,
 			@RequestParam String password,
+			@RequestParam(
+					value = "fromAttackSimulator",
+					required = false)
+			String fromAttackSimulator,
 			HttpSession session,
 			Model model) {
 
 		Optional<User> optionalUser =
 				userRepository.findByUsername(username);
 
+		// =====================================================
+		// ユーザー確認
+		// =====================================================
+
 		if (optionalUser.isEmpty()) {
+
+			if ("true".equals(fromAttackSimulator)) {
+				return "LOGIN_FAILED";
+			}
 
 			model.addAttribute(
 					"error",
@@ -904,9 +923,17 @@ public class AuthController {
 
 		User user = optionalUser.get();
 
+		// =====================================================
+		// Password確認
+		// =====================================================
+
 		if (!passwordEncoder.matches(
 				password,
 				user.getPassword())) {
+
+			if ("true".equals(fromAttackSimulator)) {
+				return "LOGIN_FAILED";
+			}
 
 			model.addAttribute(
 					"error",
@@ -915,11 +942,113 @@ public class AuthController {
 			return "login/two-factor-password";
 		}
 
+		// =====================================================
+		// メールアドレス確認
+		// =====================================================
+
+		if (user.getEmail() == null
+				|| user.getEmail().isBlank()) {
+
+			if ("true".equals(fromAttackSimulator)) {
+				return "EMAIL_NOT_FOUND";
+			}
+
+			model.addAttribute(
+					"error",
+					"メールアドレスが登録されていません");
+
+			return "login/two-factor-password";
+		}
+
+		// =====================================================
+		// 二要素認証Session
+		// =====================================================
+
 		session.setAttribute(
 				"twoFactorUsername",
 				user.getUsername());
 
-		return "redirect:/login/two-factor/email";
+		// =====================================================
+		// AttackSimulatorからの場合
+		// =====================================================
+
+		if ("true".equals(fromAttackSimulator)) {
+
+			session.setAttribute(
+					"fromAttackSimulator",
+					true);
+
+			// -------------------------------------------------
+			// OTP生成
+			// -------------------------------------------------
+
+			String code =
+					mailService.generateCode();
+
+			// -------------------------------------------------
+			// OTP保存
+			// -------------------------------------------------
+
+			verificationCodeService.saveCode(
+					session,
+					user.getEmail(),
+					code);
+
+			// -------------------------------------------------
+			// OTP送信
+			// -------------------------------------------------
+
+			mailService.sendVerificationCode(
+					user.getEmail(),
+					code);
+
+			System.out.println(
+					"========================================");
+
+			System.out.println(
+					"AttackSimulator用二要素認証開始");
+
+			System.out.println(
+					"username = "
+							+ user.getUsername());
+
+			System.out.println(
+					"email = "
+							+ user.getEmail());
+
+			System.out.println(
+					"OTPを送信しました。");
+
+			System.out.println(
+					"========================================");
+
+			// =================================================
+			// ここが重要
+			//
+			// Thymeleaf画面ではなく、
+			// HTTPレスポンスとして文字列を返す
+			// =================================================
+
+			return "OTP_SENT";
+		}
+
+		// =====================================================
+		// 通常ログイン
+		// =====================================================
+
+		session.removeAttribute(
+				"fromAttackSimulator");
+
+		/*
+		 * 通常のブラウザ操作では、このメソッドに
+		 * @ResponseBodyを付けたため、
+		 * この分岐も文字列レスポンスになる。
+		 *
+		 * 通常ログイン画面は別の画面遷移を使うので、
+		 * 通常利用ではこのPOSTを直接使わない構成にする。
+		 */
+
+		return "OTP_SENT";
 	}
 
 
@@ -1073,6 +1202,89 @@ public class AuthController {
 				"twoFactorUsername");
 
 		return "redirect:/home";
+	}
+
+	// =========================================================
+	// AttackSimulator用
+	// 二要素認証 Email OTP確認
+	// =========================================================
+
+	@PostMapping("/login/two-factor/verify-otp")
+	@ResponseBody
+	public String verifyTwoFactorAttackOtp(
+	        @RequestParam String otp,
+	        HttpServletRequest request,
+	        HttpServletResponse response) {
+
+	    HttpSession session = request.getSession(false);
+
+	    if (session == null) {
+	        return "OTP_FAILED";
+	    }
+
+	    // =========================================
+	    // 二要素認証対象ユーザー取得
+	    // =========================================
+	    Object usernameObject =
+	            session.getAttribute("twoFactorUsername");
+
+	    if (usernameObject == null) {
+	        return "OTP_FAILED";
+	    }
+
+	    String username =
+	            usernameObject.toString();
+
+	    // =========================================
+	    // AttackSimulatorからの認証か確認
+	    // =========================================
+	    Object attackSimulatorObject =
+	            session.getAttribute("fromAttackSimulator");
+
+	    if (!Boolean.TRUE.equals(attackSimulatorObject)) {
+	        return "OTP_FAILED";
+	    }
+
+	    // =========================================
+	    // 保存されているOTPを取得
+	    // =========================================
+	    String savedCode =
+	            verificationCodeService.getCode(session);
+
+	    if (savedCode == null) {
+	        return "OTP_FAILED";
+	    }
+
+	    // =========================================
+	    // OTP確認
+	    // =========================================
+	    boolean verified =
+	            verificationCodeService.verifyCode(
+	                    session,
+	                    otp);
+
+	    if (!verified) {
+	        return "OTP_FAILED";
+	    }
+
+	    // =========================================
+	    // AttackSimulator用ログインチケット発行
+	    // =========================================
+	    String ticket =
+	            attackLoginTicketService.createTicket(username);
+
+	    // =========================================
+	    // OTP・認証情報を削除
+	    // =========================================
+	    verificationCodeService.clearCode(session);
+
+	    session.removeAttribute("twoFactorUsername");
+	    session.removeAttribute("fromAttackSimulator");
+
+	    // =========================================
+	    // AttackSimulatorへ成功通知
+	    // =========================================
+	    return "redirect:/attack-login?ticket=" + ticket;
 	}
 
 
