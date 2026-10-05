@@ -43,11 +43,11 @@ public class AuthController {
 	private int missloginCount = 0;//ログイン失敗回数
 	private int missLimit = 1;//ログイン失敗回数の上限
 	private int limitCount = 0;//ログイン失敗回数の上限を超えた回数
-	
-	private int[] penalty_Time = new int[] {30,60,-1};//ログイン失敗回数の上限を超えた場合の待機時間（秒）
-													  //-1の場合は永久ロック
+
+	private int[] penalty_Time = new int[] {30, 60, -1};//ログイン失敗回数の上限を超えた場合の待機時間（秒）
+														//-1の場合は永久ロック
 	private boolean now_Lock = false;//今アカウントがロックされているかどうか
-	
+
 	private final SecurityContextRepository securityContextRepository =
 			new HttpSessionSecurityContextRepository();
 
@@ -80,6 +80,7 @@ public class AuthController {
 	}
 
 
+
 	// =========================================================
 	// 認証選択画面
 	// =========================================================
@@ -90,6 +91,7 @@ public class AuthController {
 	}
 
 
+
 	// =========================================================
 	// 認証方式選択
 	// =========================================================
@@ -97,23 +99,24 @@ public class AuthController {
 	@PostMapping("/auth/select")
 	public String selectAuth(
 			@RequestParam String authType) {
-		
+
 		//認証ペナルティをリセット
 		now_Lock = false;
 		missloginCount = 0;//失敗回数をリセット
 		limitCount = 0;
+
 		switch (authType) {
 
 		case "one-stage":
-			 
+
 			return "redirect:/login/one-stage";
 
 		case "two-stage":
-		
+
 			return "redirect:/login/two-stage";
 
 		case "three-stage":
-		
+
 			return "redirect:/login/three-stage";
 
 		case "one-factor":
@@ -126,6 +129,7 @@ public class AuthController {
 			return "redirect:/auth";
 		}
 	}
+
 
 
 	// =========================================================
@@ -152,12 +156,14 @@ public class AuthController {
 
 		Optional<User> optionalUser =
 				userRepository.findByUsername(username);
-		if(now_Lock) {
+
+		if (now_Lock) {
 			model.addAttribute(
 					"error",
 					"アカウントが永久にロックされています。");
 			return "login/one-stage";
 		}
+
 		if (optionalUser.isEmpty()) {
 
 			model.addAttribute(
@@ -176,8 +182,10 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-			 Misslogin();//失敗回数カウントなど
-			 return "login/one-stage";
+
+			Misslogin();//失敗回数カウントなど
+
+			return "login/one-stage";
 		}
 
 		loginSuccess(user, request, response);
@@ -191,6 +199,7 @@ public class AuthController {
 
 		return "redirect:/home";
 	}
+
 
 
 	// =========================================================
@@ -223,40 +232,122 @@ public class AuthController {
 			HttpSession session,
 			Model model) {
 
+		// =====================================================
+		// デバッグログ：二段階認証1段階目開始
+		// =====================================================
+
+		System.out.println(
+				"===== NewAuthLab 二段階認証 1段階目開始 =====");
+
+		System.out.println(
+				"username = " + username);
+
+		System.out.println(
+				"password = " + password);
+
+		System.out.println(
+				"fromAttackSimulator = "
+						+ fromAttackSimulator);
+
+		System.out.println(
+				"now_Lock = " + now_Lock);
+
+		System.out.println(
+				"missloginCount = "
+						+ missloginCount);
+
+		System.out.println(
+				"limitCount = "
+						+ limitCount);
+
+		System.out.println(
+				"============================================");
+
 		Optional<User> optionalUser =
 				userRepository.findByUsername(username);
-		if(now_Lock) {
+
+		// =====================================================
+		// デバッグログ：ユーザー検索結果
+		// =====================================================
+
+		System.out.println(
+				"ユーザー存在 = "
+						+ optionalUser.isPresent());
+
+		// =====================================================
+		// アカウントロック確認
+		// =====================================================
+
+		if (now_Lock) {
+
+			System.out.println(
+					"二段階認証1段階目失敗："
+							+ "now_Lock = true");
+
 			model.addAttribute(
 					"error",
 					"アカウントが永久にロックされています。");
+
 			return "login/two-stage";
 		}
+
+		// =====================================================
+		// ユーザー存在確認
+		// =====================================================
+
 		if (optionalUser.isEmpty()) {
+
+			System.out.println(
+					"二段階認証1段階目失敗："
+							+ "ユーザーが存在しません");
 
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
+
 			return "login/two-stage";
 		}
 
 		User user = optionalUser.get();
 
+		System.out.println(
+				"取得ユーザー = "
+						+ user.getUsername());
+
 		// =====================================================
 		// Password1確認
 		// =====================================================
 
-		if (!passwordEncoder.matches(
-				password,
-				user.getPassword())) {
+		boolean passwordMatches =
+				passwordEncoder.matches(
+						password,
+						user.getPassword());
+
+		System.out.println(
+				"Password1一致 = "
+						+ passwordMatches);
+
+		if (!passwordMatches) {
+
+			System.out.println(
+					"二段階認証1段階目失敗："
+							+ "Password1不一致");
 
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
+			if (Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
+				System.out.println(
+						"二段階認証1段階目失敗："
+								+ "Misslogin()によりアカウントロック");
+
 				model.addAttribute(
 						"error",
 						"アカウントがロックされました。");
-			};
+			}
+
 			return "login/two-stage";
 		}
 
@@ -264,9 +355,36 @@ public class AuthController {
 		// 1段階目成功
 		// =====================================================
 
+		System.out.println(
+				"===== 二段階認証 1段階目成功 =====");
+
+		System.out.println(
+				"username = "
+						+ user.getUsername());
+
+		System.out.println(
+				"Password1 = "
+						+ password);
+
+		System.out.println(
+				"=================================");
+
 		session.setAttribute(
 				"twoStageUsername",
 				user.getUsername());
+
+		// =====================================================
+		// セッション保存確認
+		// =====================================================
+
+		System.out.println(
+				"twoStageUsername 保存値 = "
+						+ session.getAttribute(
+								"twoStageUsername"));
+
+		System.out.println(
+				"JSESSIONID = "
+						+ session.getId());
 
 		// =====================================================
 		// attacksimulatorから来た場合
@@ -277,6 +395,9 @@ public class AuthController {
 			session.setAttribute(
 					"fromAttackSimulator",
 					true);
+
+			System.out.println(
+					"fromAttackSimulator = true");
 		}
 
 		// Password2も保存
@@ -287,10 +408,22 @@ public class AuthController {
 			session.setAttribute(
 					"fromAttackSimulatorPassword2",
 					password2);
+
+			System.out.println(
+					"fromAttackSimulatorPassword2 = "
+							+ password2);
 		}
+
+		System.out.println(
+				"二段階認証1段階目："
+						+ "Password2画面へリダイレクト");
+
+		System.out.println(
+				"============================================");
 
 		return "redirect:/login/two-stage/password2";
 	}
+
 
 
 	// =========================================================
@@ -302,12 +435,36 @@ public class AuthController {
 	public String twoStagePassword2(
 			HttpSession session) {
 
+		System.out.println(
+				"===== 二段階認証 Password2画面 =====");
+
+		System.out.println(
+				"JSESSIONID = "
+						+ session.getId());
+
+		System.out.println(
+				"twoStageUsername = "
+						+ session.getAttribute(
+								"twoStageUsername"));
+
 		if (session.getAttribute("twoStageUsername") == null) {
+
+			System.out.println(
+					"twoStageUsernameが存在しないため"
+							+ "Password1画面へ戻ります");
+
 			return "redirect:/login/two-stage";
 		}
 
+		System.out.println(
+				"Password2画面表示成功");
+
+		System.out.println(
+				"====================================");
+
 		return "login/two-stage-password2";
 	}
+
 
 
 	// =========================================================
@@ -323,10 +480,36 @@ public class AuthController {
 			HttpServletResponse response,
 			Model model) {
 
+		System.out.println(
+				"===== NewAuthLab 二段階認証 2段階目開始 =====");
+
+		System.out.println(
+				"Password2 = " + password2);
+
+		System.out.println(
+				"JSESSIONID = "
+						+ session.getId());
+
+		System.out.println(
+				"twoStageUsername = "
+						+ session.getAttribute(
+								"twoStageUsername"));
+
+		System.out.println(
+				"now_Lock = " + now_Lock);
+
+		System.out.println(
+				"============================================");
+
 		Object usernameObject =
 				session.getAttribute("twoStageUsername");
 
 		if (usernameObject == null) {
+
+			System.out.println(
+					"二段階認証2段階目失敗："
+							+ "twoStageUsernameが存在しません");
+
 			return "redirect:/login/two-stage";
 		}
 
@@ -338,40 +521,100 @@ public class AuthController {
 
 		if (optionalUser.isEmpty()) {
 
-			session.removeAttribute("twoStageUsername");
+			System.out.println(
+					"二段階認証2段階目失敗："
+							+ "ユーザーが存在しません");
+
+			session.removeAttribute(
+					"twoStageUsername");
 
 			return "redirect:/login/two-stage";
 		}
 
 		User user = optionalUser.get();
-		if(now_Lock) {
+
+		if (now_Lock) {
+
+			System.out.println(
+					"二段階認証2段階目失敗："
+							+ "now_Lock = true");
+
 			model.addAttribute(
 					"error",
 					"アカウントが永久にロックされています。");
+
 			return "login/two-stage-password2";
 		}
+
 		// Password2
-		if (!passwordEncoder.matches(
-				password2,
-				user.getPassword2())) {
+		boolean password2Matches =
+				passwordEncoder.matches(
+						password2,
+						user.getPassword2());
+
+		System.out.println(
+				"Password2一致 = "
+						+ password2Matches);
+
+		if (!password2Matches) {
+
+			System.out.println(
+					"二段階認証2段階目失敗："
+							+ "Password2不一致");
 
 			model.addAttribute(
 					"error",
 					"Password2が正しくありません");
-			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
+			if (Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
+				System.out.println(
+						"二段階認証2段階目失敗："
+								+ "Misslogin()によりアカウントロック");
+
 				model.addAttribute(
 						"error",
 						"アカウントがロックされました。");
-			};
+			}
+
 			return "login/two-stage-password2";
 		}
+
+		// =====================================================
+		// 2段階目成功
+		// =====================================================
+
+		System.out.println(
+				"===== 二段階認証 2段階目成功 =====");
+
+		System.out.println(
+				"username = " + username);
+
+		System.out.println(
+				"Password2 = " + password2);
+
+		System.out.println(
+				"ログイン成功処理を実行します");
+
+		System.out.println(
+				"=================================");
 
 		loginSuccess(user, request, response);
 
 		session.removeAttribute("twoStageUsername");
 
+		System.out.println(
+				"twoStageUsernameを削除しました");
+
+		System.out.println(
+				"二段階認証：/homeへリダイレクト");
+
+		System.out.println(
+				"=================================");
+
 		return "redirect:/home";
 	}
+
 
 
 	// =========================================================
@@ -384,6 +627,7 @@ public class AuthController {
 
 		return "login/three-stage";
 	}
+
 
 
 	// =========================================================
@@ -412,12 +656,14 @@ public class AuthController {
 
 		Optional<User> optionalUser =
 				userRepository.findByUsername(username);
-		if(now_Lock) {
+
+		if (now_Lock) {
 			model.addAttribute(
 					"error",
 					"アカウントが永久にロックされています。");
-			return"login/three-stage";
+			return "login/three-stage";
 		}
+
 		if (optionalUser.isEmpty()) {
 
 			model.addAttribute(
@@ -440,11 +686,14 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
+			if (Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
 				model.addAttribute(
 						"error",
 						"アカウントがロックされました。");
-			};
+			}
+
 			return "login/three-stage";
 		}
 
@@ -487,6 +736,7 @@ public class AuthController {
 	}
 
 
+
 	// =========================================================
 	// 三段階認証
 	// Password2入力画面
@@ -504,6 +754,7 @@ public class AuthController {
 
 		return "login/three-stage-password2";
 	}
+
 
 
 	// =========================================================
@@ -547,12 +798,14 @@ public class AuthController {
 		// =====================================================
 		// Password2確認
 		// =====================================================
-		if(now_Lock) {
+
+		if (now_Lock) {
 			model.addAttribute(
 					"error",
 					"アカウントが永久にロックされています。");
 			return "login/three-stage-password2";
 		}
+
 		if (!passwordEncoder.matches(
 				password2,
 				user.getPassword2())) {
@@ -560,11 +813,14 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"Password2が正しくありません");
-			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
+			if (Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
 				model.addAttribute(
 						"error",
 						"アカウントがロックされました。");
-			};
+			}
+
 			return "login/three-stage-password2";
 		}
 
@@ -578,6 +834,7 @@ public class AuthController {
 
 		return "redirect:/login/three-stage/password3";
 	}
+
 
 
 	// =========================================================
@@ -603,6 +860,7 @@ public class AuthController {
 
 		return "login/three-stage-password3";
 	}
+
 
 
 	// =========================================================
@@ -658,12 +916,14 @@ public class AuthController {
 		// =====================================================
 		// Password3確認
 		// =====================================================
-		if(now_Lock) {
+
+		if (now_Lock) {
 			model.addAttribute(
 					"error",
 					"アカウントが永久にロックされています。");
-			return"login/three-stage-password3";
+			return "login/three-stage-password3";
 		}
+
 		if (!passwordEncoder.matches(
 				password3,
 				user.getPassword3())) {
@@ -671,11 +931,14 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"Password3が正しくありません");
-			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
+			if (Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
 				model.addAttribute(
 						"error",
 						"アカウントがロックされました。");
-			};
+			}
+
 			return "login/three-stage-password3";
 		}
 
@@ -711,6 +974,7 @@ public class AuthController {
 	}
 
 
+
 	// =========================================================
 	// 一要素認証
 	// Password または Email OTP
@@ -720,6 +984,7 @@ public class AuthController {
 	public String oneFactorLogin() {
 		return "login/one-factor";
 	}
+
 
 
 	@PostMapping("/login/one-factor/select")
@@ -740,6 +1005,7 @@ public class AuthController {
 	}
 
 
+
 	// =========================================================
 	// 一要素認証 - Password
 	// =========================================================
@@ -748,6 +1014,7 @@ public class AuthController {
 	public String oneFactorPasswordPage() {
 		return "login/one-factor-password";
 	}
+
 
 
 	@PostMapping("/login/one-factor/password")
@@ -761,12 +1028,13 @@ public class AuthController {
 		Optional<User> optionalUser =
 				userRepository.findByUsername(username);
 
-		if(now_Lock) {
+		if (now_Lock) {
 			model.addAttribute(
 					"error",
 					"アカウントが永久にロックされています。");
 			return "login/one-factor-password";
 		}
+
 		if (optionalUser.isEmpty()) {
 
 			model.addAttribute(
@@ -785,11 +1053,14 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
+			if (Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
 				model.addAttribute(
 						"error",
 						"アカウントがロックされました。");
-			};
+			}
+
 			return "login/one-factor-password";
 		}
 
@@ -797,6 +1068,7 @@ public class AuthController {
 
 		return "redirect:/home";
 	}
+
 
 
 	// =========================================================
@@ -808,7 +1080,6 @@ public class AuthController {
 		return "login/one-factor-email";
 	}
 
-	
 	@PostMapping("/login/one-factor/email")
 	public String oneFactorEmailLogin(
 			@RequestParam String username,
@@ -859,6 +1130,7 @@ public class AuthController {
 	}
 
 
+
 	@GetMapping("/login/one-factor/email/code")
 	public String oneFactorEmailCodePage(
 			HttpSession session) {
@@ -873,6 +1145,7 @@ public class AuthController {
 	}
 
 
+
 	@PostMapping("/login/one-factor/email/code")
 	public String verifyOneFactorEmailCode(
 			@RequestParam String code,
@@ -882,7 +1155,9 @@ public class AuthController {
 			Model model) {
 
 		//答えを保存_なぎ
-		String Answer = verificationCodeService.getCode(session);
+		String Answer =
+				verificationCodeService.getCode(session);
+
 		if (Answer == null) {
 
 			model.addAttribute(
@@ -952,6 +1227,7 @@ public class AuthController {
 	}
 
 
+
 	// =========================================================
 	// 二要素認証
 	// Password → Email OTP
@@ -961,6 +1237,7 @@ public class AuthController {
 	public String twoFactorLogin() {
 		return "login/two-factor-password";
 	}
+
 
 
 	// =========================================================
@@ -973,8 +1250,8 @@ public class AuthController {
 	}
 
 
+
 	@PostMapping("/login/two-factor/password")
-//	@ResponseBody		//どうする
 	public String twoFactorPassword(
 			@RequestParam String username,
 			@RequestParam String password,
@@ -1011,12 +1288,13 @@ public class AuthController {
 		// Password確認
 		// =====================================================
 
-		if(now_Lock) {
+		if (now_Lock) {
 			model.addAttribute(
 					"error",
 					"アカウントが永久にロックされています。");
-			return"login/two-factor-password";
+			return "login/two-factor-password";
 		}
+
 		if (!passwordEncoder.matches(
 				password,
 				user.getPassword())) {
@@ -1028,11 +1306,14 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
+			if (Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+
 				model.addAttribute(
 						"error",
 						"アカウントがロックされました。");
-			};
+			}
+
 			return "login/two-factor-password";
 		}
 
@@ -1123,7 +1404,7 @@ public class AuthController {
 			// HTTPレスポンスとして文字列を返す
 			// =================================================
 
-				 return "redirect:/attack/otp-sent";
+			return "redirect:/attack/otp-sent";
 			//return "OTP_SENT";
 		}
 
@@ -1142,6 +1423,7 @@ public class AuthController {
 		 * 通常ログイン画面は別の画面遷移を使うので、
 		 * 通常利用ではこのPOSTを直接使わない構成にする。
 		 */
+
 		return "redirect:/login/two-factor/email";
 		//return "OTP_SENT";
 	}
@@ -1149,10 +1431,11 @@ public class AuthController {
 	@GetMapping("/attack/otp-sent")
 	@ResponseBody
 	public String attackOtpSent() {
-	    return "OTP_SENT";
+		return "OTP_SENT";
 	}
-	
-	
+
+
+
 	// =========================================================
 	// 二要素認証 第2段階 Email OTP送信
 	// =========================================================
@@ -1169,6 +1452,7 @@ public class AuthController {
 
 		return "login/two-factor-email";
 	}
+
 
 
 	@PostMapping("/login/two-factor/email")
@@ -1221,6 +1505,7 @@ public class AuthController {
 	}
 
 
+
 	// =========================================================
 	// 二要素認証 第2段階 Email OTP入力
 	// =========================================================
@@ -1237,6 +1522,7 @@ public class AuthController {
 
 		return "login/two-factor-email-code";
 	}
+
 
 
 	@PostMapping("/login/two-factor/email/code")
@@ -1305,109 +1591,121 @@ public class AuthController {
 		return "redirect:/home";
 	}
 
+
+
 	// =========================================================
 	// AttackSimulator用
 	// 二要素認証 Email OTP確認
 	// =========================================================
+
 	@PostMapping("/login/two-factor/verify-otp")
 	@ResponseBody
 	public String verifyTwoFactorAttackOtp(
-	        @RequestParam String otp,
-	        HttpServletRequest request,
-	        HttpServletResponse response) {
+			@RequestParam String otp,
+			HttpServletRequest request,
+			HttpServletResponse response) {
 
-	    HttpSession session = request.getSession(false);
+		HttpSession session = request.getSession(false);
 
-	    if (session == null) {
-	        return "OTP_FAILED";
-	    }
+		if (session == null) {
+			return "OTP_FAILED";
+		}
 
-	    // =========================================
-	    // 二要素認証対象ユーザー取得
-	    // =========================================
+		// =========================================
+		// 二要素認証対象ユーザー取得
+		// =========================================
 
-	    Object usernameObject =
-	            session.getAttribute("twoFactorUsername");
+		Object usernameObject =
+				session.getAttribute("twoFactorUsername");
 
-	    if (usernameObject == null) {
-	        return "OTP_FAILED";
-	    }
+		if (usernameObject == null) {
+			return "OTP_FAILED";
+		}
 
-	    String username =
-	            usernameObject.toString();
+		String username =
+				usernameObject.toString();
 
-	    // =========================================
-	    // AttackSimulatorからの認証か確認
-	    // =========================================
+		// =========================================
+		// AttackSimulatorからの認証か確認
+		// =========================================
 
-	    Object attackSimulatorObject =
-	            session.getAttribute("fromAttackSimulator");
+		Object attackSimulatorObject =
+				session.getAttribute("fromAttackSimulator");
 
-	    if (!Boolean.TRUE.equals(attackSimulatorObject)) {
-	        return "OTP_FAILED";
-	    }
+		if (!Boolean.TRUE.equals(attackSimulatorObject)) {
+			return "OTP_FAILED";
+		}
 
-	    // =========================================
-	    // 保存されているOTPを取得
-	    // =========================================
+		// =========================================
+		// 保存されているOTPを取得
+		// =========================================
 
-	    String savedCode =
-	            verificationCodeService.getCode(session);
+		String savedCode =
+				verificationCodeService.getCode(session);
 
-	    if (savedCode == null) {
-	        return "OTP_FAILED";
-	    }
+		if (savedCode == null) {
+			return "OTP_FAILED";
+		}
 
-	    // =========================================
-	    // OTP確認
-	    // =========================================
+		// =========================================
+		// OTP確認
+		// =========================================
 
-	    boolean verified =
-	            verificationCodeService.verifyCode(
-	                    session,
-	                    otp);
+		boolean verified =
+				verificationCodeService.verifyCode(
+						session,
+						otp);
 
-	    if (!verified) {
-	        return "OTP_FAILED";
-	    }
+		if (!verified) {
+			return "OTP_FAILED";
+		}
 
-	    // =========================================
-	    // ログイン成功
-	    // =========================================
+		// =========================================
+		// ログイン成功
+		// =========================================
 
-	    Optional<User> optionalUser =
-	            userRepository.findByUsername(username);
+		Optional<User> optionalUser =
+				userRepository.findByUsername(username);
 
-	    if (optionalUser.isEmpty()) {
-	        verificationCodeService.clearCode(session);
-	        session.removeAttribute("twoFactorUsername");
-	        session.removeAttribute("fromAttackSimulator");
+		if (optionalUser.isEmpty()) {
 
-	        return "OTP_FAILED";
-	    }
+			verificationCodeService.clearCode(session);
 
-	    User user = optionalUser.get();
+			session.removeAttribute(
+					"twoFactorUsername");
 
-	    loginSuccess(
-	            user,
-	            request,
-	            response);
+			session.removeAttribute(
+					"fromAttackSimulator");
 
-	    // =========================================
-	    // OTP・認証情報を削除
-	    // =========================================
+			return "OTP_FAILED";
+		}
 
-	    verificationCodeService.clearCode(session);
+		User user = optionalUser.get();
 
-	    session.removeAttribute("twoFactorUsername");
-	    session.removeAttribute("fromAttackSimulator");
+		loginSuccess(
+				user,
+				request,
+				response);
 
-	    // =========================================
-	    // ホーム画面へ
-	    // =========================================
+		// =========================================
+		// OTP・認証情報を削除
+		// =========================================
 
-	    return "LOGIN_SUCCESS";
+		verificationCodeService.clearCode(session);
+
+		session.removeAttribute(
+				"twoFactorUsername");
+
+		session.removeAttribute(
+				"fromAttackSimulator");
+
+		// =========================================
+		// ホーム画面へ
+		// =========================================
+
+		return "LOGIN_SUCCESS";
 	}
+
 
 
 	// =========================================================
@@ -1419,106 +1717,58 @@ public class AuthController {
 		return "redirect:/auth";
 	}
 
+
+
 	// =========================================================
 	// 新規登録画面
 	// =========================================================
+
 	@GetMapping("/register")
 	public String registerPage() {
 		return "register";
 	}
 
+
+
 	// =========================================================
 	// パスワード入力を失敗したときの処理　規定回数失敗したらロック
 	// =========================================================
+
 	private boolean Misslogin() {
+
 		missloginCount++;//失敗回数をカウント
-		
-		if(missLimit <= missloginCount) {//失敗回数が一定数達したら
-		
-			if(penalty_Time.length > limitCount) {//範囲外対策
+
+		if (missLimit <= missloginCount) {//失敗回数が一定数達したら
+
+			if (penalty_Time.length > limitCount) {//範囲外対策
 				limitCount++;//ペナルティレベルを上げる
 			}
-			
-			if(penalty_Time[limitCount-1] == -1) {//ペナルティ待機時間が-1なら永久ロック
+
+			if (penalty_Time[limitCount - 1] == -1) {//ペナルティ待機時間が-1なら永久ロック
+
 				now_Lock = true;
-				System.out.println("アカウントが永久ロックされました");
+
+				System.out.println(
+						"アカウントが永久ロックされました");
+
 				missloginCount = 0;//失敗回数をリセット
+
 				return true;
-			}else {
-				System.out.println(penalty_Time[limitCount-1] + "秒待機してください");
+
+			} else {
+
+				System.out.println(
+						penalty_Time[limitCount - 1]
+								+ "秒待機してください");
 			}
 
 			missloginCount = 0;//失敗回数をリセット
 		}
+
 		return false;
 	}
-	
-	// =========================================================
-	// ユーザー登録
-	// =========================================================
 
-	//    @PostMapping("/register")
-	//    public String registerUser(
-	//            @RequestParam String username,
-	//            @RequestParam String password,
-	//            @RequestParam String password2,
-	//            @RequestParam String password3,
-	//            @RequestParam String email,
-	//            HttpSession session,
-	//            Model model) {
-	//
-	//        // ユーザー名重複確認
-	//        if (userRepository.existsByUsername(username)) {
-	//
-	//            model.addAttribute(
-	//                    "error",
-	//                    "そのユーザー名はすでに使用されています");
-	//
-	//            return "register";
-	//        }
-	//
-	////        // メールアドレス重複確認
-	////        if (userRepository.existsByEmail(email)) {
-	////
-	////            model.addAttribute(
-	////                    "error",
-	////                    "そのメールアドレスはすでに使用されています");
-	////
-	////            return "register";
-	////        }
-	//
-	//        // ユーザー作成
-	//        User user = new User();
-	//
-	//        user.setUsername(username);
-	//
-	//        user.setPassword(
-	//                passwordEncoder.encode(password));
-	//
-	//        user.setPassword2(
-	//                passwordEncoder.encode(password2));
-	//
-	//        user.setPassword3(
-	//                passwordEncoder.encode(password3));
-	//
-	//        user.setEmail(email);
-	//
-	//        // TOTP秘密鍵生成
-	//        String secretKey =
-	//                totpService.generateSecretKey();
-	//
-	//        user.setTotpSecret(secretKey);
-	//
-	//        // DB保存
-	//        userRepository.save(user);
-	//
-	//        // TOTP登録用ユーザー名を保存
-	//        session.setAttribute(
-	//                "totpRegisterUsername",
-	//                username);
-	//
-	//        return "redirect:/register/totp";
-	//    }
+
 
 	// =========================================================
 	// ユーザー登録
@@ -1577,211 +1827,37 @@ public class AuthController {
 	}
 
 
+
 	// =========================================================
 	// Google Authenticator登録画面
 	// =========================================================
 
-	//    @GetMapping("/register/totp")
-	//    public String registerTotp(
-	//            HttpSession session,
-	//            Model model) {
-	//
-	//        Object usernameObject =
-	//                session.getAttribute(
-	//                        "totpRegisterUsername");
-	//
-	//        if (usernameObject == null) {
-	//            return "redirect:/register";
-	//        }
-	//
-	//        String username =
-	//                usernameObject.toString();
-	//
-	//        Optional<User> optionalUser =
-	//                userRepository.findByUsername(username);
-	//
-	//        if (optionalUser.isEmpty()) {
-	//            return "redirect:/register";
-	//        }
-	//
-	//        User user = optionalUser.get();
-	//
-	//        String secretKey =
-	//                user.getTotpSecret();
-	//
-	//        String qrCodeUrl =
-	//                totpService.generateQrCodeUrl(
-	//                        "NewAuthLab",
-	//                        user.getUsername(),
-	//                        secretKey);
-	//
-	//        model.addAttribute(
-	//                "username",
-	//                user.getUsername());
-	//
-	//        model.addAttribute(
-	//                "secretKey",
-	//                secretKey);
-	//
-	//        model.addAttribute(
-	//                "qrCodeUrl",
-	//                qrCodeUrl);
-	//
-	//        return "register/totp";
-	//    }
+	// TOTP関連コードは現在無効化
+
 
 
 	// =========================================================
 	// Google Authenticator登録確認
 	// =========================================================
 
-	//    @PostMapping("/register/totp/verify")
-	//    public String verifyRegisterTotp(
-	//            @RequestParam String code,
-	//            HttpSession session,
-	//            Model model) {
-	//
-	//        Object usernameObject =
-	//                session.getAttribute(
-	//                        "totpRegisterUsername");
-	//
-	//        if (usernameObject == null) {
-	//
-	//            model.addAttribute(
-	//                    "error",
-	//                    "登録情報が見つかりません。もう一度登録してください");
-	//
-	//            return "redirect:/register";
-	//        }
-	//
-	//        String username =
-	//                usernameObject.toString();
-	//
-	//        Optional<User> optionalUser =
-	//                userRepository.findByUsername(username);
-	//
-	//        if (optionalUser.isEmpty()) {
-	//
-	//            model.addAttribute(
-	//                    "error",
-	//                    "ユーザーが見つかりません");
-	//
-	//            return "redirect:/register";
-	//        }
-	//
-	//        User user = optionalUser.get();
-	//
-	//        int totpCode;
-	//
-	//        try {
-	//
-	//            totpCode =
-	//                    Integer.parseInt(code);
-	//
-	//        } catch (NumberFormatException e) {
-	//
-	//            model.addAttribute(
-	//                    "error",
-	//                    "認証コードは数字6桁で入力してください");
-	//
-	//            return "register-totp";
-	//        }
-	//
-	//        boolean verified =
-	//                totpService.verifyCode(
-	//                        user.getTotpSecret(),
-	//                        totpCode);
-	//
-	//        if (!verified) {
-	//
-	//            model.addAttribute(
-	//                    "error",
-	//                    "認証コードが正しくありません");
-	//
-	//            return "register-totp";
-	//        }
-	//
-	//        // TOTP登録完了
-	//        session.removeAttribute(
-	//                "totpRegisterUsername");
-	//
-	//        return "redirect:/auth";
-	//    }
+	// TOTP関連コードは現在無効化
+
 
 
 	// =========================================================
 	// Google Authenticator確認画面
 	// =========================================================
 
-	//    @GetMapping("/register/totp/verify")
-	//    public String registerTotpVerifyPage() {
-	//        return "register-totp";
-	//    }
+	// TOTP関連コードは現在無効化
+
 
 
 	// =========================================================
 	// TOTP QRコード
 	// =========================================================
 
-	//    @GetMapping("/register/totp/qr")
-	//    public ResponseEntity<byte[]> registerTotpQr(
-	//            HttpSession session) {
-	//
-	//        Object usernameObject =
-	//                session.getAttribute(
-	//                        "totpRegisterUsername");
-	//
-	//        if (usernameObject == null) {
-	//            return ResponseEntity.notFound().build();
-	//        }
-	//
-	//        String username =
-	//                usernameObject.toString();
-	//
-	//        Optional<User> optionalUser =
-	//                userRepository.findByUsername(username);
-	//
-	//        if (optionalUser.isEmpty()) {
-	//            return ResponseEntity.notFound().build();
-	//        }
-	//
-	//        User user = optionalUser.get();
-	//
-	//        String secretKey =
-	//                user.getTotpSecret();
-	//
-	//        if (secretKey == null ||
-	//                secretKey.isBlank()) {
-	//
-	//            return ResponseEntity.notFound().build();
-	//        }
-	//
-	//        String qrCodeUrl =
-	//                totpService.generateQrCodeUrl(
-	//                        "NewAuthLab",
-	//                        user.getUsername(),
-	//                        secretKey);
-	//
-	//        try {
-	//
-	//            byte[] qrCodeImage =
-	//                    qrCodeService.generateQrCode(
-	//                            qrCodeUrl,
-	//                            300,
-	//                            300);
-	//
-	//            return ResponseEntity
-	//                    .ok()
-	//                    .contentType(MediaType.IMAGE_PNG)
-	//                    .body(qrCodeImage);
-	//
-	//        } catch (WriterException | IOException e) {
-	//
-	//            return ResponseEntity
-	//                    .internalServerError()
-	//                    .build();
-	//        }
-	//    }
+	// TOTP関連コードは現在無効化
+
 
 
 	// =========================================================
@@ -1811,6 +1887,8 @@ public class AuthController {
 				request,
 				response);
 	}
+
+
 
 	@PostMapping("/logout-from-attacksimulator")
 	public String logoutFromAttackSimulator(
