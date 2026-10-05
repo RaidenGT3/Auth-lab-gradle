@@ -1208,7 +1208,6 @@ public class AuthController {
 	// AttackSimulator用
 	// 二要素認証 Email OTP確認
 	// =========================================================
-
 	@PostMapping("/login/two-factor/verify-otp")
 	@ResponseBody
 	public String verifyTwoFactorAttackOtp(
@@ -1225,6 +1224,7 @@ public class AuthController {
 	    // =========================================
 	    // 二要素認証対象ユーザー取得
 	    // =========================================
+
 	    Object usernameObject =
 	            session.getAttribute("twoFactorUsername");
 
@@ -1238,6 +1238,7 @@ public class AuthController {
 	    // =========================================
 	    // AttackSimulatorからの認証か確認
 	    // =========================================
+
 	    Object attackSimulatorObject =
 	            session.getAttribute("fromAttackSimulator");
 
@@ -1248,6 +1249,7 @@ public class AuthController {
 	    // =========================================
 	    // 保存されているOTPを取得
 	    // =========================================
+
 	    String savedCode =
 	            verificationCodeService.getCode(session);
 
@@ -1258,6 +1260,7 @@ public class AuthController {
 	    // =========================================
 	    // OTP確認
 	    // =========================================
+
 	    boolean verified =
 	            verificationCodeService.verifyCode(
 	                    session,
@@ -1268,23 +1271,41 @@ public class AuthController {
 	    }
 
 	    // =========================================
-	    // AttackSimulator用ログインチケット発行
+	    // ログイン成功
 	    // =========================================
-	    String ticket =
-	            attackLoginTicketService.createTicket(username);
+
+	    Optional<User> optionalUser =
+	            userRepository.findByUsername(username);
+
+	    if (optionalUser.isEmpty()) {
+	        verificationCodeService.clearCode(session);
+	        session.removeAttribute("twoFactorUsername");
+	        session.removeAttribute("fromAttackSimulator");
+
+	        return "OTP_FAILED";
+	    }
+
+	    User user = optionalUser.get();
+
+	    loginSuccess(
+	            user,
+	            request,
+	            response);
 
 	    // =========================================
 	    // OTP・認証情報を削除
 	    // =========================================
+
 	    verificationCodeService.clearCode(session);
 
 	    session.removeAttribute("twoFactorUsername");
 	    session.removeAttribute("fromAttackSimulator");
 
 	    // =========================================
-	    // AttackSimulatorへ成功通知
+	    // ホーム画面へ
 	    // =========================================
-	    return "redirect:/attack-login?ticket=" + ticket;
+
+	    return "LOGIN_SUCCESS";
 	}
 
 
