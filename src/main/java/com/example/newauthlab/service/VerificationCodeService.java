@@ -34,7 +34,7 @@ public class VerificationCodeService {
 		
 		
 		// 認証コードの有効期限を[timeout]分後に設定_なぎ
-		int timeout = 5;//タイムアウトの分数を記録＿なぎ
+		int timeout = 1;//タイムアウトの分数を記録＿なぎ
 		LocalDateTime expiresAt =
 		        LocalDateTime.now().plusMinutes(timeout);
 		// セッションに有効期限を保存＿なぎ

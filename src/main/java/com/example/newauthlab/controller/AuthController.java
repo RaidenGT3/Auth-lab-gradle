@@ -1246,12 +1246,22 @@ public class AuthController {
 			HttpServletRequest request,
 			HttpServletResponse response,
 			Model model) {
-
-		if (verificationCodeService.getCode(session) == null) {
+		//答えを保存_なぎ
+		String Answer = verificationCodeService.getCode(session);
+		if (Answer == null) {
 
 			model.addAttribute(
 					"error",
-					"認証コードの有効期限が切れています");
+					"認証コードが存在しません。もう一度ログインしてください");
+
+			return "login/two-factor-email-code";
+		}
+
+		if (Answer.equals("時間切れ")) {
+
+			model.addAttribute(
+					"error",
+					"認証コードの有効期限が切れています。もう一度ログインしてください");
 
 			return "login/two-factor-email-code";
 		}
