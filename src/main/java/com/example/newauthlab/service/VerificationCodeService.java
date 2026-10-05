@@ -1,5 +1,7 @@
 package com.example.newauthlab.service;
 
+import java.time.LocalDateTime;
+
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.stereotype.Service;
@@ -14,7 +16,9 @@ public class VerificationCodeService {
 	// セッションに保存するメールアドレスのキー
 	private static final String EMAIL_KEY =
 			"twoStageVerificationEmail";
-
+	//セッションに保存する有効期限のキー＿なぎ
+	private static final String EXPIRES_AT_KEY =
+	        "twoStageVerificationExpiresAt";
 
 	// =========================
 	// 認証コードを保存
@@ -24,9 +28,17 @@ public class VerificationCodeService {
 			HttpSession session,
 			String email,
 			String code) {
-
+		
 		session.setAttribute(CODE_KEY, code);
 		session.setAttribute(EMAIL_KEY, email);
+		
+		
+		// 認証コードの有効期限を[timeout]分後に設定_なぎ
+		int timeout = 5;//タイムアウトの分数を記録＿なぎ
+		LocalDateTime expiresAt =
+		        LocalDateTime.now().plusMinutes(timeout);
+		// セッションに有効期限を保存＿なぎ
+		session.setAttribute(EXPIRES_AT_KEY, expiresAt);
 	}
 
 
@@ -37,11 +49,28 @@ public class VerificationCodeService {
 	public String getCode(
 			HttpSession session) {
 
+		//認証コードがnullではないかを判定する
 		Object code =
 				session.getAttribute(CODE_KEY);
 
 		if (code == null) {
 			return null;
+		}
+		
+		
+		//認証コードが有効期限内か判定する＿なぎ
+		LocalDateTime expiresAt =
+		        (LocalDateTime) session.getAttribute(EXPIRES_AT_KEY);
+		System.out.println(LocalDateTime.now().isAfter(expiresAt));
+
+		if (expiresAt == null) {
+			System.out.println("有効期限が設定されていません。");
+		    return null;
+		}
+		//もし認証コードが有効期限内じゃないなら
+		if (LocalDateTime.now().isAfter(expiresAt)) {
+		    clearCode(session);
+		    return  "時間切れ";
 		}
 
 		return code.toString();
