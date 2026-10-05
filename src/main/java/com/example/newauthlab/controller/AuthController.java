@@ -38,9 +38,16 @@ public class AuthController {
 	private final VerificationCodeService verificationCodeService;
 	private final TotpService totpService;
 	private final QrCodeService qrCodeService;
-	private final AttackLoginTicketService
-	attackLoginTicketService;
+	private final AttackLoginTicketService attackLoginTicketService;
 
+	private int missloginCount = 0;//ログイン失敗回数
+	private int missLimit = 1;//ログイン失敗回数の上限
+	private int limitCount = 0;//ログイン失敗回数の上限を超えた回数
+	
+	private int[] penalty_Time = new int[] {30,60,-1};//ログイン失敗回数の上限を超えた場合の待機時間（秒）
+													  //-1の場合は永久ロック
+	private boolean now_Lock = false;//今アカウントがロックされているかどうか
+	
 	private final SecurityContextRepository securityContextRepository =
 			new HttpSessionSecurityContextRepository();
 
@@ -90,16 +97,23 @@ public class AuthController {
 	@PostMapping("/auth/select")
 	public String selectAuth(
 			@RequestParam String authType) {
-
+		
+		//認証ペナルティをリセット
+		now_Lock = false;
+		missloginCount = 0;//失敗回数をリセット
+		limitCount = 0;
 		switch (authType) {
 
 		case "one-stage":
+			 
 			return "redirect:/login/one-stage";
 
 		case "two-stage":
+		
 			return "redirect:/login/two-stage";
 
 		case "three-stage":
+		
 			return "redirect:/login/three-stage";
 
 		case "one-factor":
@@ -138,7 +152,12 @@ public class AuthController {
 
 		Optional<User> optionalUser =
 				userRepository.findByUsername(username);
-
+		if(now_Lock) {
+			model.addAttribute(
+					"error",
+					"アカウントが永久にロックされています。");
+			return "login/one-stage";
+		}
 		if (optionalUser.isEmpty()) {
 
 			model.addAttribute(
@@ -157,8 +176,8 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-
-			return "login/one-stage";
+			 Misslogin();//失敗回数カウントなど
+			 return "login/one-stage";
 		}
 
 		loginSuccess(user, request, response);
@@ -206,13 +225,17 @@ public class AuthController {
 
 		Optional<User> optionalUser =
 				userRepository.findByUsername(username);
-
+		if(now_Lock) {
+			model.addAttribute(
+					"error",
+					"アカウントが永久にロックされています。");
+			return "login/two-stage";
+		}
 		if (optionalUser.isEmpty()) {
 
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-
 			return "login/two-stage";
 		}
 
@@ -229,7 +252,11 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-
+			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+				model.addAttribute(
+						"error",
+						"アカウントがロックされました。");
+			};
 			return "login/two-stage";
 		}
 
@@ -317,7 +344,12 @@ public class AuthController {
 		}
 
 		User user = optionalUser.get();
-
+		if(now_Lock) {
+			model.addAttribute(
+					"error",
+					"アカウントが永久にロックされています。");
+			return "login/two-stage-password2";
+		}
 		// Password2
 		if (!passwordEncoder.matches(
 				password2,
@@ -326,7 +358,11 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"Password2が正しくありません");
-
+			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+				model.addAttribute(
+						"error",
+						"アカウントがロックされました。");
+			};
 			return "login/two-stage-password2";
 		}
 
@@ -376,7 +412,12 @@ public class AuthController {
 
 		Optional<User> optionalUser =
 				userRepository.findByUsername(username);
-
+		if(now_Lock) {
+			model.addAttribute(
+					"error",
+					"アカウントが永久にロックされています。");
+			return"login/three-stage";
+		}
 		if (optionalUser.isEmpty()) {
 
 			model.addAttribute(
@@ -399,7 +440,11 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-
+			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+				model.addAttribute(
+						"error",
+						"アカウントがロックされました。");
+			};
 			return "login/three-stage";
 		}
 
@@ -502,7 +547,12 @@ public class AuthController {
 		// =====================================================
 		// Password2確認
 		// =====================================================
-
+		if(now_Lock) {
+			model.addAttribute(
+					"error",
+					"アカウントが永久にロックされています。");
+			return "login/three-stage-password2";
+		}
 		if (!passwordEncoder.matches(
 				password2,
 				user.getPassword2())) {
@@ -510,7 +560,11 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"Password2が正しくありません");
-
+			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+				model.addAttribute(
+						"error",
+						"アカウントがロックされました。");
+			};
 			return "login/three-stage-password2";
 		}
 
@@ -604,7 +658,12 @@ public class AuthController {
 		// =====================================================
 		// Password3確認
 		// =====================================================
-
+		if(now_Lock) {
+			model.addAttribute(
+					"error",
+					"アカウントが永久にロックされています。");
+			return"login/three-stage-password3";
+		}
 		if (!passwordEncoder.matches(
 				password3,
 				user.getPassword3())) {
@@ -612,7 +671,11 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"Password3が正しくありません");
-
+			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+				model.addAttribute(
+						"error",
+						"アカウントがロックされました。");
+			};
 			return "login/three-stage-password3";
 		}
 
@@ -698,6 +761,12 @@ public class AuthController {
 		Optional<User> optionalUser =
 				userRepository.findByUsername(username);
 
+		if(now_Lock) {
+			model.addAttribute(
+					"error",
+					"アカウントが永久にロックされています。");
+			return "login/one-factor-password";
+		}
 		if (optionalUser.isEmpty()) {
 
 			model.addAttribute(
@@ -716,7 +785,11 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-
+			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+				model.addAttribute(
+						"error",
+						"アカウントがロックされました。");
+			};
 			return "login/one-factor-password";
 		}
 
@@ -735,7 +808,7 @@ public class AuthController {
 		return "login/one-factor-email";
 	}
 
-
+	
 	@PostMapping("/login/one-factor/email")
 	public String oneFactorEmailLogin(
 			@RequestParam String username,
@@ -808,7 +881,18 @@ public class AuthController {
 			HttpServletResponse response,
 			Model model) {
 
-		if (verificationCodeService.getCode(session) == null) {
+		//答えを保存_なぎ
+		String Answer = verificationCodeService.getCode(session);
+		if (Answer == null) {
+
+			model.addAttribute(
+					"error",
+					"認証コードが存在しません。もう一度ログインしてください");
+
+			return "login/one-factor-email-code";
+		}
+
+		if (Answer.equals("時間切れ")) {
 
 			model.addAttribute(
 					"error",
@@ -890,7 +974,7 @@ public class AuthController {
 
 
 	@PostMapping("/login/two-factor/password")
-	@ResponseBody
+//	@ResponseBody		//どうする
 	public String twoFactorPassword(
 			@RequestParam String username,
 			@RequestParam String password,
@@ -927,6 +1011,12 @@ public class AuthController {
 		// Password確認
 		// =====================================================
 
+		if(now_Lock) {
+			model.addAttribute(
+					"error",
+					"アカウントが永久にロックされています。");
+			return"login/two-factor-password";
+		}
 		if (!passwordEncoder.matches(
 				password,
 				user.getPassword())) {
@@ -938,7 +1028,11 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-
+			if(Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+				model.addAttribute(
+						"error",
+						"アカウントがロックされました。");
+			};
 			return "login/two-factor-password";
 		}
 
@@ -1029,7 +1123,8 @@ public class AuthController {
 			// HTTPレスポンスとして文字列を返す
 			// =================================================
 
-			return "OTP_SENT";
+				 return "redirect:/attack/otp-sent";
+			//return "OTP_SENT";
 		}
 
 		// =====================================================
@@ -1047,11 +1142,17 @@ public class AuthController {
 		 * 通常ログイン画面は別の画面遷移を使うので、
 		 * 通常利用ではこのPOSTを直接使わない構成にする。
 		 */
-
-		return "OTP_SENT";
+		return "redirect:/login/two-factor/email";
+		//return "OTP_SENT";
 	}
 
-
+	@GetMapping("/attack/otp-sent")
+	@ResponseBody
+	public String attackOtpSent() {
+	    return "OTP_SENT";
+	}
+	
+	
 	// =========================================================
 	// 二要素認証 第2段階 Email OTP送信
 	// =========================================================
@@ -1326,7 +1427,32 @@ public class AuthController {
 		return "register";
 	}
 
+	// =========================================================
+	// パスワード入力を失敗したときの処理　規定回数失敗したらロック
+	// =========================================================
+	private boolean Misslogin() {
+		missloginCount++;//失敗回数をカウント
+		
+		if(missLimit <= missloginCount) {//失敗回数が一定数達したら
+		
+			if(penalty_Time.length > limitCount) {//範囲外対策
+				limitCount++;//ペナルティレベルを上げる
+			}
+			
+			if(penalty_Time[limitCount-1] == -1) {//ペナルティ待機時間が-1なら永久ロック
+				now_Lock = true;
+				System.out.println("アカウントが永久ロックされました");
+				missloginCount = 0;//失敗回数をリセット
+				return true;
+			}else {
+				System.out.println(penalty_Time[limitCount-1] + "秒待機してください");
+			}
 
+			missloginCount = 0;//失敗回数をリセット
+		}
+		return false;
+	}
+	
 	// =========================================================
 	// ユーザー登録
 	// =========================================================
