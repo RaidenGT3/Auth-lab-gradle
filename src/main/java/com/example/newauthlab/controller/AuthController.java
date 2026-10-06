@@ -1240,6 +1240,194 @@ public class AuthController {
 
 
 
+//	// =========================================================
+//	// 二要素認証 第1段階 Password
+//	// =========================================================
+//
+//	@GetMapping("/login/two-factor/password")
+//	public String twoFactorPasswordPage() {
+//		return "login/two-factor-password";
+//	}
+//
+//
+//
+//	@PostMapping("/login/two-factor/password")
+//	public String twoFactorPassword(
+//			@RequestParam String username,
+//			@RequestParam String password,
+//			@RequestParam(
+//					value = "fromAttackSimulator",
+//					required = false)
+//			String fromAttackSimulator,
+//			HttpSession session,
+//			Model model) {
+//
+//		Optional<User> optionalUser =
+//				userRepository.findByUsername(username);
+//
+//		// =====================================================
+//		// ユーザー確認
+//		// =====================================================
+//
+//		if (optionalUser.isEmpty()) {
+//
+//			if ("true".equals(fromAttackSimulator)) {
+//				return "LOGIN_FAILED";
+//			}
+//
+//			model.addAttribute(
+//					"error",
+//					"ユーザー名またはパスワードが正しくありません");
+//
+//			return "login/two-factor-password";
+//		}
+//
+//		User user = optionalUser.get();
+//
+//		// =====================================================
+//		// Password確認
+//		// =====================================================
+//
+//		if (now_Lock) {
+//			model.addAttribute(
+//					"error",
+//					"アカウントが永久にロックされています。");
+//			return "login/two-factor-password";
+//		}
+//
+//		if (!passwordEncoder.matches(
+//				password,
+//				user.getPassword())) {
+//
+//			if ("true".equals(fromAttackSimulator)) {
+//				return "LOGIN_FAILED";
+//			}
+//
+//			model.addAttribute(
+//					"error",
+//					"ユーザー名またはパスワードが正しくありません");
+//
+//			if (Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+//
+//				model.addAttribute(
+//						"error",
+//						"アカウントがロックされました。");
+//			}
+//
+//			return "login/two-factor-password";
+//		}
+//
+//		// =====================================================
+//		// メールアドレス確認
+//		// =====================================================
+//
+//		if (user.getEmail() == null
+//				|| user.getEmail().isBlank()) {
+//
+//			if ("true".equals(fromAttackSimulator)) {
+//				return "EMAIL_NOT_FOUND";
+//			}
+//
+//			model.addAttribute(
+//					"error",
+//					"メールアドレスが登録されていません");
+//
+//			return "login/two-factor-password";
+//		}
+//
+//		// =====================================================
+//		// 二要素認証Session
+//		// =====================================================
+//
+//		session.setAttribute(
+//				"twoFactorUsername",
+//				user.getUsername());
+//
+//		// =====================================================
+//		// AttackSimulatorからの場合
+//		// =====================================================
+//
+//		if ("true".equals(fromAttackSimulator)) {
+//
+//			session.setAttribute(
+//					"fromAttackSimulator",
+//					true);
+//
+//			// -------------------------------------------------
+//			// OTP生成
+//			// -------------------------------------------------
+//
+//			String code =
+//					mailService.generateCode();
+//
+//			// -------------------------------------------------
+//			// OTP保存
+//			// -------------------------------------------------
+//
+//			verificationCodeService.saveCode(
+//					session,
+//					user.getEmail(),
+//					code);
+//
+//			// -------------------------------------------------
+//			// OTP送信
+//			// -------------------------------------------------
+//
+//			mailService.sendVerificationCode(
+//					user.getEmail(),
+//					code);
+//
+//			System.out.println(
+//					"========================================");
+//
+//			System.out.println(
+//					"AttackSimulator用二要素認証開始");
+//
+//			System.out.println(
+//					"username = "
+//							+ user.getUsername());
+//
+//			System.out.println(
+//					"email = "
+//							+ user.getEmail());
+//
+//			System.out.println(
+//					"OTPを送信しました。");
+//
+//			System.out.println(
+//					"========================================");
+//
+//			// =================================================
+//			// ここが重要
+//			//
+//			// Thymeleaf画面ではなく、
+//			// HTTPレスポンスとして文字列を返す
+//			// =================================================
+//
+//			//return "redirect:/attack/otp-sent";
+//			return "OTP_SENT";
+//		}
+//
+//		// =====================================================
+//		// 通常ログイン
+//		// =====================================================
+//
+//		session.removeAttribute(
+//				"fromAttackSimulator");
+//
+//		/*
+//		 * 通常のブラウザ操作では、このメソッドに
+//		 * @ResponseBodyを付けたため、
+//		 * この分岐も文字列レスポンスになる。
+//		 *
+//		 * 通常ログイン画面は別の画面遷移を使うので、
+//		 * 通常利用ではこのPOSTを直接使わない構成にする。
+//		 */
+//
+//		return "redirect:/login/two-factor/email";
+//		//return "OTP_SENT";
+//	}
+	
 	// =========================================================
 	// 二要素認証 第1段階 Password
 	// =========================================================
@@ -1250,8 +1438,12 @@ public class AuthController {
 	}
 
 
+	// =========================================================
+	// 二要素認証 第1段階 Password
+	// =========================================================
 
 	@PostMapping("/login/two-factor/password")
+	@ResponseBody
 	public String twoFactorPassword(
 			@RequestParam String username,
 			@RequestParam String password,
@@ -1289,9 +1481,15 @@ public class AuthController {
 		// =====================================================
 
 		if (now_Lock) {
+
+			if ("true".equals(fromAttackSimulator)) {
+				return "LOGIN_FAILED";
+			}
+
 			model.addAttribute(
 					"error",
 					"アカウントが永久にロックされています。");
+
 			return "login/two-factor-password";
 		}
 
@@ -1307,7 +1505,7 @@ public class AuthController {
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
 
-			if (Misslogin()) {//失敗回数カウントなど アカウント永久ロックでtrueを返す
+			if (Misslogin()) {
 
 				model.addAttribute(
 						"error",
@@ -1398,14 +1596,10 @@ public class AuthController {
 					"========================================");
 
 			// =================================================
-			// ここが重要
-			//
-			// Thymeleaf画面ではなく、
-			// HTTPレスポンスとして文字列を返す
+			// AttackSimulatorには直接レスポンスを返す
 			// =================================================
 
-			return "redirect:/attack/otp-sent";
-			//return "OTP_SENT";
+			return "OTP_SENT";
 		}
 
 		// =====================================================
@@ -1415,17 +1609,7 @@ public class AuthController {
 		session.removeAttribute(
 				"fromAttackSimulator");
 
-		/*
-		 * 通常のブラウザ操作では、このメソッドに
-		 * @ResponseBodyを付けたため、
-		 * この分岐も文字列レスポンスになる。
-		 *
-		 * 通常ログイン画面は別の画面遷移を使うので、
-		 * 通常利用ではこのPOSTを直接使わない構成にする。
-		 */
-
 		return "redirect:/login/two-factor/email";
-		//return "OTP_SENT";
 	}
 
 	@GetMapping("/attack/otp-sent")
