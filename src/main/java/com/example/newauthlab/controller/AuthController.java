@@ -1779,7 +1779,6 @@ public class AuthController {
 	@GetMapping("/attack/check-otp-expiration")
 	@ResponseBody
 	public void checkCodeExpiration(HttpSession session, Model model) {
-		System.out.println("確認");
 	   verificationCodeService.chackTime_Out(session);
 	}
 	

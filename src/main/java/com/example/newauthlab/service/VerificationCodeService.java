@@ -20,6 +20,8 @@ public class VerificationCodeService {
 	//セッションに保存する有効期限のキー＿なぎ
 	private static final String EXPIRES_AT_KEY =
 	        "twoStageVerificationExpiresAt";
+	
+	public int timeout = 1;//タイムアウトの分数を設定する＿なぎ
 
 	
 	// =========================
@@ -136,7 +138,7 @@ public class VerificationCodeService {
 	public void clearTimeOut(HttpSession session) {
 		session.removeAttribute(EXPIRES_AT_KEY);
 		// 認証コードの有効期限を[timeout]分後に設定_なぎ
-		int timeout = 99999;//タイムアウトの分数を記録＿なぎ
+
 		LocalDateTime expiresAt =
 		        LocalDateTime.now().plusMinutes(timeout);
 		 System.out.println("saveCode");
@@ -149,7 +151,6 @@ public class VerificationCodeService {
 	// 有効期限チェック＿なぎ
 	// =========================
 	public void chackTime_Out(HttpSession session) {
-		System.out.println("確認シミュレーターで");
 		//有効期限をセットする＿なぎ
 
 		Object code =

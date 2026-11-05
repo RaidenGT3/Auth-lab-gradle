@@ -8,21 +8,24 @@ import org.springframework.stereotype.Service;
 public class EmailService {
 
 	private final JavaMailSender mailSender;
-
-	public EmailService(JavaMailSender mailSender) {
+	private final VerificationCodeService verificationCodeService;
+	public EmailService(JavaMailSender mailSender,
+			VerificationCodeService verificationCodeService) {
 		this.mailSender = mailSender;
+		this.verificationCodeService = verificationCodeService;
 	}
 
 	public void sendOtp(String to,String otp) {
 		SimpleMailMessage message = new SimpleMailMessage();
-
+		int timeout = verificationCodeService.timeout;
 		//		メール送信の宛先等の入力
 		message.setTo(to);
-		message.setSubject("ワンタイムパスワード");
+		message.setSubject("認証コードのお知らせ");
 		message.setText(
-				"あなたのワンタイムパスワードは\n\n"
-						+otp
-						+"\n\nこのコードを入力してください。"
+				"ログインに必要な認証コードをお知らせします。\n\n"
+						+"認証コード："+otp
+						+"\n\nこのコードをログイン画面に入力してください。"
+						+"\n\nこのコードの有効期限は"+timeout +"分です。"
 				);
 		//		送信
 		mailSender.send(message);
