@@ -72,13 +72,13 @@ public class EmailController {
 					required = false)
 			String fromAttackSimulator,
 			HttpSession session) {
-		
+
 		///=========================================
 		/// 有効期限の設定＿なぎ
 		/// =========================================
 		 verificationCodeService.clearTimeOut(session); 
-		 
-		 
+		
+		
 		// =====================================================
 		// 6桁のランダムなOTPを作成
 		// =====================================================

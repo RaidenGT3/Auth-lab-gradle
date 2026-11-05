@@ -883,6 +883,7 @@ public class AuthController {
 
 		//答えを保存_なぎ
 		String Answer = verificationCodeService.getCode(session);
+		System.out.print("Answer = ");
 		if (Answer == null) {
 
 			model.addAttribute(
@@ -1771,17 +1772,17 @@ public class AuthController {
 	//                    .build();
 	//        }
 	//    }
-
+	
 	// =========================================================
 	// 有効期限が切れているかの確認＿なぎ
 	// =========================================================
 	@GetMapping("/attack/check-otp-expiration")
 	@ResponseBody
 	public void checkCodeExpiration(HttpSession session, Model model) {
-		System.out.println("確認");
 	   verificationCodeService.chackTime_Out(session);
 	}
 	
+
 	// =========================================================
 	// ログイン成功処理
 	// =========================================================
