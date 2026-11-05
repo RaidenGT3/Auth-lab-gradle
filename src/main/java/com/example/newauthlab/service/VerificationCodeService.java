@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 @Service
 public class VerificationCodeService {
@@ -31,14 +32,9 @@ public class VerificationCodeService {
 		
 		session.setAttribute(CODE_KEY, code);
 		session.setAttribute(EMAIL_KEY, email);
+		clearTimeOut(session);
 		
-		
-		// 認証コードの有効期限を[timeout]分後に設定_なぎ
-		int timeout = 1;//タイムアウトの分数を記録＿なぎ
-		LocalDateTime expiresAt =
-		        LocalDateTime.now().plusMinutes(timeout);
-		// セッションに有効期限を保存＿なぎ
-		session.setAttribute(EXPIRES_AT_KEY, expiresAt);
+
 	}
 
 
@@ -70,6 +66,14 @@ public class VerificationCodeService {
 		//もし認証コードが有効期限内じゃないなら
 		if (LocalDateTime.now().isAfter(expiresAt)) {
 		    clearCode(session);
+		    RestClient restClient = RestClient.create();
+
+		    
+		    //攻撃シミュレーターに時間切れを通知する
+		    restClient.post()
+		            .uri("http://localhost:8081/attack/otp-timeout")
+		            .retrieve()
+		            .body(String.class);
 		    return  "時間切れ";
 		}
 
@@ -124,4 +128,45 @@ public class VerificationCodeService {
 		session.removeAttribute(CODE_KEY);
 		session.removeAttribute(EMAIL_KEY);
 	}
+	
+	// =========================
+		// 有効期限を設定
+		// =========================
+		public void clearTimeOut(HttpSession session) {
+			session.removeAttribute(EXPIRES_AT_KEY);
+			// 認証コードの有効期限を[timeout]分後に設定_なぎ
+			int timeout = 1;//タイムアウトの分数を記録＿なぎ
+			LocalDateTime expiresAt =
+			        LocalDateTime.now().plusMinutes(timeout);
+			 System.out.println("saveCode");
+
+			// セッションに有効期限を保存＿なぎ
+			session.setAttribute(EXPIRES_AT_KEY, expiresAt);
+		}
+
+		// =========================
+		// 有効期限チェック＿なぎ
+		// =========================
+		public void chackTime_Out(HttpSession session) {
+			System.out.println("確認シミュレーターで");
+			//有効期限をセットする＿なぎ
+
+			Object code =
+					session.getAttribute(CODE_KEY);
+			LocalDateTime expiresAt =
+			        (LocalDateTime) session.getAttribute(EXPIRES_AT_KEY);
+			if (LocalDateTime.now().isAfter(expiresAt)) {
+			    clearCode(session);
+			    RestClient restClient = RestClient.create();
+
+			    
+			    //攻撃シミュレーターに時間切れを通知する
+			    System.out.println("おしまい");
+			    restClient.post()
+			            .uri("http://localhost:8081/attack/otp-timeout")
+			            .retrieve()
+			            .body(String.class);
+			    
+			}
+		}
 }

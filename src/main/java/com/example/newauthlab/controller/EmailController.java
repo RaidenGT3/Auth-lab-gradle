@@ -17,6 +17,7 @@ import com.example.newauthlab.entity.User;
 import com.example.newauthlab.repository.UserRepository;
 import com.example.newauthlab.service.AttackLoginTicketService;
 import com.example.newauthlab.service.EmailService;
+import com.example.newauthlab.service.VerificationCodeService;
 
 @Controller
 public class EmailController {
@@ -27,11 +28,15 @@ public class EmailController {
 
 	private final AttackLoginTicketService
 	attackLoginTicketService;
+	
+	private final VerificationCodeService
+	verificationCodeService;
 
 	public EmailController(
 			EmailService emailService,
 			UserRepository userRepository,
-			AttackLoginTicketService attackLoginTicketService) {
+			AttackLoginTicketService attackLoginTicketService,
+			VerificationCodeService verificationCodeService) {
 
 		this.emailService =
 				emailService;
@@ -41,6 +46,9 @@ public class EmailController {
 
 		this.attackLoginTicketService =
 				attackLoginTicketService;
+		
+		this.verificationCodeService =
+				verificationCodeService;
 	}
 
 	// =========================================================
@@ -64,7 +72,13 @@ public class EmailController {
 					required = false)
 			String fromAttackSimulator,
 			HttpSession session) {
-
+		
+		///=========================================
+		/// 有効期限の設定＿なぎ
+		/// =========================================
+		 verificationCodeService.clearTimeOut(session); 
+		 
+		 
 		// =====================================================
 		// 6桁のランダムなOTPを作成
 		// =====================================================
