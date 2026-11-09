@@ -1,3 +1,4 @@
+
 package com.example.newauthlab.service;
 
 import java.util.Random;
@@ -22,11 +23,23 @@ public class MailService {
 
 	public String generateCode() {
 
+		// =========================
+		// 通常時：ランダムな6桁の認証コードを生成
+		// =========================
+
+		
 		Random random = new Random();
 
 		int code = 100000 + random.nextInt(900000);
 
 		return String.valueOf(code);
+		
+
+		// =========================
+		// 検証用：認証コードを000000に固定
+		// =========================
+
+		//return "000000";
 	}
 
 

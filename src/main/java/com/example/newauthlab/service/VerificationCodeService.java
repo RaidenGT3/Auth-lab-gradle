@@ -1,3 +1,4 @@
+
 package com.example.newauthlab.service;
 
 import java.time.LocalDateTime;
@@ -10,165 +11,240 @@ import org.springframework.web.client.RestClient;
 @Service
 public class VerificationCodeService {
 
-	// セッションに保存する認証コードのキー
-	private static final String CODE_KEY =
-			"twoStageVerificationCode";
-
-	// セッションに保存するメールアドレスのキー
-	private static final String EMAIL_KEY =
-			"twoStageVerificationEmail";
-	//セッションに保存する有効期限のキー＿なぎ
-	private static final String EXPIRES_AT_KEY =
-	        "twoStageVerificationExpiresAt";
-	
-	public int timeout = 9999;//タイムアウトの分数を設定する＿なぎ
-
-	
-	// =========================
-	// 認証コードを保存
-	// =========================
-
-	public void saveCode(
-			
-			HttpSession session,
-			String email,
-			String code) {
-		
-		session.setAttribute(CODE_KEY, code);
-		session.setAttribute(EMAIL_KEY, email);
-		clearTimeOut(session);
-		
-
-	}
+    // セッションに保存する認証コードのキー
+    private static final String CODE_KEY =
+            "twoStageVerificationCode";
 
 
-	// =========================
-	// 認証コードを取得
-	// =========================
+    // メールアドレスのキー
+    private static final String EMAIL_KEY =
+            "twoStageVerificationEmail";
+    // 有効期限のキー
+    private static final String EXPIRES_AT_KEY =
+            "twoStageVerificationExpiresAt";
 
-	public String getCode(
-			HttpSession session) {
+    // OTPの有効期限（分）
+    public int timeout = 5;
 
-		//認証コードがnullではないかを判定する
-		Object code =
-				session.getAttribute(CODE_KEY);
+    // =====================================================
+    // 認証コードを保存
+    // =====================================================
 
-		if (code == null) {
-			return null;
-		}
-		
-		
-		//認証コードが有効期限内か判定する＿なぎ
-		LocalDateTime expiresAt =
-		        (LocalDateTime) session.getAttribute(EXPIRES_AT_KEY);
+    public void saveCode(HttpSession session, String email, String code) {
 
+    	System.out.println("★★★ saveCode() 実行 ★★★");
+    	System.out.println("実行時刻 = " + LocalDateTime.now());
+        System.out.println("===== OTP保存処理 =====");
+        System.out.println("Session ID = " + session.getId());
 
-		if (expiresAt == null) {
-			System.out.println("有効期限が設定されていません。");
-		    return null;
-		}
-		//もし認証コードが有効期限内じゃないなら
-		if (LocalDateTime.now().isAfter(expiresAt)) {
-		    clearCode(session);
-		    RestClient restClient = RestClient.create();
+        session.setAttribute(CODE_KEY, code);
+        session.setAttribute(EMAIL_KEY, email);
 
-		    
-		    //攻撃シミュレーターに時間切れを通知する
-		    restClient.post()
-		            .uri("http://localhost:8081/attack/otp-timeout")
-		            .retrieve()
-		            .body(String.class);
-		    return  "時間切れ";
-		}
-		return code.toString();
-	}
+        clearTimeOut(session);
 
+        System.out.println("有効期限 = " + session.getAttribute(EXPIRES_AT_KEY));
+        System.out.println("======================");
+    }
 
-	// =========================
-	// メールアドレスを取得
-	// =========================
+    // =====================================================
+    // 認証コードを取得・有効期限確認
+    // =====================================================
 
-	public String getEmail(
-			HttpSession session) {
+    public String getCode(HttpSession session) {
 
-		Object email =
-				session.getAttribute(EMAIL_KEY);
+        synchronized (session) {
 
-		if (email == null) {
-			return null;
-		}
+            if (isOtpExpired(session)) {
+                return null;
+            }
 
-		return email.toString();
-	}
+            Object code = session.getAttribute(CODE_KEY);
 
+            return code == null ? null : code.toString();
+        }
+    }
 
-	// =========================
-	// 認証コードを確認
-	// =========================
+    // =====================================================
+    // メールアドレスを取得
+    // =====================================================
 
-	public boolean verifyCode(
-			HttpSession session,
-			String inputCode) {
+    public String getEmail(HttpSession session) {
 
-		String savedCode =
-				getCode(session);
+        Object email = session.getAttribute(EMAIL_KEY);
 
-		if (savedCode == null) {
-			return false;
-		}
+        if (email == null) {
+            return null;
+        }
 
-		return savedCode.equals(inputCode);
-	}
+        return email.toString();
+    }
 
+    // =====================================================
+    // 認証コードを確認
+    // =====================================================
 
-	// =========================
-	// 認証コードを削除
-	// =========================
+    public boolean verifyCode(
+            HttpSession session,
+            String inputCode) {
 
-	public void clearCode(
-			HttpSession session) {
+        if (inputCode == null) {
+            return false;
+        }
 
-		session.removeAttribute(CODE_KEY);
-		session.removeAttribute(EMAIL_KEY);
-	}
-	
-	// =========================
-	// 有効期限を設定
-	// =========================
-	public void clearTimeOut(HttpSession session) {
-		session.removeAttribute(EXPIRES_AT_KEY);
-		// 認証コードの有効期限を[timeout]分後に設定_なぎ
+        String savedCode = getCode(session);
 
-		LocalDateTime expiresAt =
-		        LocalDateTime.now().plusMinutes(timeout);
-		 System.out.println("saveCode");
+        if (savedCode == null) {
 
-		// セッションに有効期限を保存＿なぎ
-		session.setAttribute(EXPIRES_AT_KEY, expiresAt);
-	}
+            System.out.println(
+                    "OTPが存在しない、または期限切れです。");
 
-	// =========================
-	// 有効期限チェック＿なぎ
-	// =========================
-	public void chackTime_Out(HttpSession session) {
-		//有効期限をセットする＿なぎ
+            return false;
+        }
 
-		Object code =
-				session.getAttribute(CODE_KEY);
-		LocalDateTime expiresAt =
-		        (LocalDateTime) session.getAttribute(EXPIRES_AT_KEY);
-		if (LocalDateTime.now().isAfter(expiresAt)) {
-		    clearCode(session);
-		    RestClient restClient = RestClient.create();
+        boolean result = savedCode.equals(inputCode);
 
-		    
-		    //攻撃シミュレーターに時間切れを通知する
-		    System.out.println("おしまい");
-		    restClient.post()
-		            .uri("http://localhost:8081/attack/otp-timeout")
-		            .retrieve()
-		            .body(String.class);
-		    
-		}
-	}
+        System.out.println("========== OTP確認 ==========");
+        System.out.println("入力されたOTP = " + inputCode);
+        System.out.println("認証結果 = " + result);
+        System.out.println("==============================");
+
+        return result;
+    }
+
+    // =====================================================
+    // 認証コードと有効期限を削除
+    // =====================================================
+
+    public void clearCode(HttpSession session) {
+
+        session.removeAttribute(CODE_KEY);
+        session.removeAttribute(EMAIL_KEY);
+        session.removeAttribute(EXPIRES_AT_KEY);
+
+        System.out.println("OTP・Email・有効期限を削除しました。");
+    }
+
+    // =====================================================
+    // 有効期限を設定
+    // =====================================================
+
+    public void clearTimeOut(HttpSession session) {
+
+        session.removeAttribute(EXPIRES_AT_KEY);
+
+        LocalDateTime expiresAt =
+            LocalDateTime.now().plusMinutes(timeout);
+
+        session.setAttribute(EXPIRES_AT_KEY, expiresAt);
+
+        System.out.println("===== OTP有効期限設定 =====");
+        System.out.println("設定時刻 = " + LocalDateTime.now());
+        System.out.println("有効期限 = " + expiresAt);
+        System.out.println("設定時間 = " + timeout + "分");
+        System.out.println("==========================");
+    }
+
+    // =====================================================
+    // AttackSimulatorへタイムアウト通知
+    // =====================================================
+
+    private void notifyAttackSimulator() {
+
+        try {
+
+            String response =
+                    RestClient.create()
+                            .post()
+                            .uri(
+                                    "http://localhost:8081/attack/otp-timeout")
+                            .retrieve()
+                            .body(String.class);
+
+            System.out.println(
+                    "AttackSimulatorへタイムアウト通知を送信しました。");
+
+            System.out.println(
+                    "通知レスポンス = " + response);
+
+        } catch (Exception e) {
+
+            System.err.println(
+                    "AttackSimulatorへのタイムアウト通知に失敗しました。");
+
+            System.err.println(
+                    "エラー = " + e.getMessage());
+        }
+    }
+    
+    public boolean isOtpExpired(HttpSession session) {
+
+        synchronized (session) {
+
+            Object code =
+                    session.getAttribute(CODE_KEY);
+
+            Object expiresAtObject =
+                    session.getAttribute(EXPIRES_AT_KEY);
+
+            System.out.println();
+            System.out.println("===== OTP期限判定 =====");
+            System.out.println("Session ID = " + session.getId());
+            System.out.println("現在時刻 = " + LocalDateTime.now());
+
+            // OTPが存在しない場合
+            if (code == null) {
+
+                System.out.println("OTP = 存在しません");
+                System.out.println("判定 = EXPIRED");
+                System.out.println("======================");
+
+                return true;
+            }
+
+            // 有効期限が設定されていない場合
+            if (!(expiresAtObject instanceof LocalDateTime)) {
+
+                System.out.println("有効期限が設定されていません。");
+
+                clearCode(session);
+
+                System.out.println("判定 = EXPIRED");
+                System.out.println("======================");
+
+                return true;
+            }
+
+            LocalDateTime expiresAt =
+                    (LocalDateTime) expiresAtObject;
+
+            LocalDateTime now =
+                    LocalDateTime.now();
+
+            long remainingSeconds =
+                    java.time.Duration.between(
+                            now,
+                            expiresAt).getSeconds();
+
+            System.out.println("有効期限 = " + expiresAt);
+            System.out.println("残り時間 = " + remainingSeconds + "秒");
+
+            // 期限切れ判定
+            if (!now.isBefore(expiresAt)) {
+
+                System.out.println("OTPの有効期限切れを検知しました。");
+
+                clearCode(session);
+
+                System.out.println("判定 = EXPIRED");
+                System.out.println("======================");
+
+                return true;
+            }
+
+            System.out.println("判定 = ACTIVE");
+            System.out.println("======================");
+
+            return false;
+        }
+    }
 }
