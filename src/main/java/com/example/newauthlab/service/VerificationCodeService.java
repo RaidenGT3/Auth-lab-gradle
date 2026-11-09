@@ -21,7 +21,7 @@ public class VerificationCodeService {
 	private static final String EXPIRES_AT_KEY =
 	        "twoStageVerificationExpiresAt";
 	
-	public int timeout = 1;//タイムアウトの分数を設定する＿なぎ
+	public int timeout = 9999;//タイムアウトの分数を設定する＿なぎ
 
 	
 	// =========================
