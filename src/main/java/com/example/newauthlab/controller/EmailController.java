@@ -66,6 +66,7 @@ public class EmailController {
 
 	@PostMapping("/send-otp")
 	public String sendOtp(
+			@RequestParam("username") String username,
 			@RequestParam("email") String email,
 			@RequestParam(
 					value = "fromAttackSimulator",
@@ -99,6 +100,9 @@ public class EmailController {
 		session.setAttribute(
 				"email",
 				email);
+		session.setAttribute(
+				"username", 
+				username);
 
 		// =====================================================
 		// attacksimulatorから来たことを記録
@@ -146,6 +150,7 @@ public class EmailController {
 			HttpServletRequest request,
 			HttpServletResponse response,
 			Model model) {
+		
 
 		// =====================================================
 		// セッションからOTP取得
@@ -190,25 +195,7 @@ public class EmailController {
 
 			return "otp";
 		}
-
-		// =====================================================
-		// User取得
-		// =====================================================
-
-		Optional<User> optionalUser =
-				userRepository.findByEmail(email);
-
-		if (optionalUser.isEmpty()) {
-
-			model.addAttribute(
-					"error",
-					"ユーザーが見つかりません");
-
-			return "otp";
-		}
-
-		User user =
-				optionalUser.get();
+		
 
 		// =====================================================
 		// attacksimulator経由か確認
@@ -218,6 +205,59 @@ public class EmailController {
 				Boolean.TRUE.equals(
 						session.getAttribute(
 								"fromAttackSimulator"));
+
+		// =====================================================
+		// User取得
+		// =====================================================
+
+		Optional<User> optionalUser;
+
+		if (fromAttackSimulator) {
+
+		    String username =
+		            (String) session.getAttribute("username");
+
+		    if (username == null || username.isBlank()) {
+		        model.addAttribute(
+		                "error",
+		                "ユーザー名が確認できません");
+		        return "otp";
+		    }
+
+		    optionalUser =
+		            userRepository.findByUsername(username);
+
+		} else {
+
+		    optionalUser =
+		            userRepository.findByEmail(email);
+		}
+
+		if (optionalUser.isEmpty()) {
+		    model.addAttribute(
+		            "error",
+		            "ユーザーが見つかりません");
+		    return "otp";
+		}
+
+		User user = optionalUser.get();
+
+//下記はメールアドレスで検索するため、同一メールアドレスが使用できない
+//		Optional<User> optionalUser =
+//				userRepository.findByEmail(email);
+//
+//		if (optionalUser.isEmpty()) {
+//
+//			model.addAttribute(
+//					"error",
+//					"ユーザーが見つかりません");
+//
+//			return "otp";
+//		}
+//
+//		User user =
+//				optionalUser.get();
+
 
 		// =====================================================
 		// attacksimulator経由
