@@ -269,51 +269,35 @@ public class TwoFactorAttackController {
 		// ログインチケット発行
 		// =====================================================
 
+		System.out.println("① OTP照合成功。チケット発行開始");
+
 		String ticket =
-				attackLoginTicketService.createTicket(
-						username);
+		        attackLoginTicketService.createTicket(username);
+
+		System.out.println("② チケット発行完了");
+		System.out.println("ticket = " + ticket);
 
 		// =====================================================
 		// OTP・二要素認証情報を削除
 		// =====================================================
 
-		verificationCodeService.clearCode(
-				session);
+		verificationCodeService.clearCode(session);
 
-		session.removeAttribute(
-				"twoFactorUsername");
+		session.removeAttribute("twoFactorUsername");
+		session.removeAttribute("fromAttackSimulator");
 
-		session.removeAttribute(
-				"fromAttackSimulator");
+		System.out.println("③ セッション情報削除完了");
 
 		// =====================================================
-		// 成功ログ
+		// HTTP 302リダイレクト
 		// =====================================================
 
-		System.out.println(
-				"OTP認証成功");
-
-		System.out.println(
-				"username = "
-						+ username);
-
-		System.out.println(
-				"ticket = "
-						+ ticket);
-
-		System.out.println(
-				"========================================");
-
-		// =====================================================
-		// 本物のHTTP 302リダイレクト
-		// =====================================================
+		System.out.println("④ HTTP 302を返します");
 
 		return ResponseEntity
-				.status(HttpStatus.FOUND)
-				.location(
-						URI.create(
-								"/attack-login?ticket="
-										+ ticket))
-				.build();
+		        .status(HttpStatus.FOUND)
+		        .location(
+		                URI.create("/attack-login?ticket=" + ticket))
+		        .build();
 	}
 }

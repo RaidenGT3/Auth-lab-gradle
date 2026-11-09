@@ -1,5 +1,7 @@
+
 package com.example.newauthlab.controller;
 
+import java.util.List;
 import java.util.Optional;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,110 +25,141 @@ import com.example.newauthlab.service.AttackLoginTicketService;
 @Controller
 public class AttackLoginController {
 
-	private final AttackLoginTicketService
-	attackLoginTicketService;
+    private final AttackLoginTicketService attackLoginTicketService;
+    private final UserRepository userRepository;
 
-	private final UserRepository
-	userRepository;
+    public AttackLoginController(
+            AttackLoginTicketService attackLoginTicketService,
+            UserRepository userRepository) {
 
-	public AttackLoginController(
-			AttackLoginTicketService attackLoginTicketService,
-			UserRepository userRepository) {
+        this.attackLoginTicketService = attackLoginTicketService;
+        this.userRepository = userRepository;
+    }
 
-		this.attackLoginTicketService =
-				attackLoginTicketService;
+    // =========================================================
+    // AttackSimulatorからのログイン引き継ぎ
+    // =========================================================
 
-		this.userRepository =
-				userRepository;
-	}
+    @GetMapping("/attack-login")
+    public String attackLogin(
+            @RequestParam("ticket") String ticket,
+            HttpServletRequest request,
+            HttpServletResponse response) {
 
-	// =========================================================
-	// attacksimulatorからのログイン引き継ぎ
-	// =========================================================
+        // =====================================================
+        // 1. チケット確認
+        // =====================================================
 
-	@GetMapping("/attack-login")
-	public String attackLogin(
-			@RequestParam("ticket") String ticket,
-			HttpServletRequest request,
-			HttpServletResponse response) {
+        String username =
+                attackLoginTicketService.consumeTicket(ticket);
 
-		// =====================================================
-		// チケット確認
-		// =====================================================
+        if (username == null) {
+            System.out.println("AttackLogin: チケットが無効です");
+            return "redirect:/login";
+        }
 
-		String username =
-				attackLoginTicketService
-				.consumeTicket(ticket);
+        // =====================================================
+        // 2. ユーザー取得
+        // =====================================================
 
-		if (username == null) {
+        Optional<User> optionalUser =
+                userRepository.findByUsername(username);
 
-			return "redirect:/login";
-		}
+        if (optionalUser.isEmpty()) {
+            System.out.println("AttackLogin: ユーザーが存在しません");
+            return "redirect:/login";
+        }
 
-		// =====================================================
-		// ユーザー取得
-		// =====================================================
+        User user = optionalUser.get();
 
-		Optional<User> optionalUser =
-				userRepository.findByUsername(username);
+        // =====================================================
+        // 3. Authentication作成
+        // =====================================================
 
-		if (optionalUser.isEmpty()) {
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        user.getUsername(),
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                );
 
-			return "redirect:/login";
-		}
+        // =====================================================
+        // 4. SecurityContext作成
+        // =====================================================
 
-		User user =
-				optionalUser.get();
+        SecurityContext securityContext =
+                SecurityContextHolder.createEmptyContext();
 
-		// =====================================================
-		// Spring Securityへログイン状態を設定
-		// =====================================================
+        securityContext.setAuthentication(authentication);
 
-		Authentication authentication =
-				new UsernamePasswordAuthenticationToken(
-						user.getUsername(),
-						null,
-						java.util.List.of(
-								new SimpleGrantedAuthority(
-										"ROLE_USER")));
+        SecurityContextHolder.setContext(securityContext);
 
-		SecurityContext securityContext =
-				SecurityContextHolder.createEmptyContext();
+        // =====================================================
+        // 5. HTTPセッション取得
+        // =====================================================
 
-		securityContext.setAuthentication(
-				authentication);
+        HttpSession session = request.getSession(true);
 
-		SecurityContextHolder.setContext(
-				securityContext);
+        // =====================================================
+        // 6. SecurityContextをセッションに保存
+        // =====================================================
 
-		// =====================================================
-		// セッションへSecurityContextを保存
-		// =====================================================
+        session.setAttribute(
+                HttpSessionSecurityContextRepository
+                        .SPRING_SECURITY_CONTEXT_KEY,
+                securityContext
+        );
 
-		HttpSession session =
-				request.getSession(true);
+        HttpSessionSecurityContextRepository repository =
+                new HttpSessionSecurityContextRepository();
 
-		HttpSessionSecurityContextRepository
-		securityContextRepository =
-		new HttpSessionSecurityContextRepository();
+        repository.saveContext(
+                securityContext,
+                request,
+                response
+        );
 
-		securityContextRepository.saveContext(
-				securityContext,
-				request,
-				response);
+        // =====================================================
+        // 7. AttackSimulator経由のログイン情報
+        // =====================================================
 
-		// =====================================================
-		// attacksimulator経由であることを記録
-		// =====================================================
+        session.setAttribute("fromAttackSimulator", true);
 
-		session.setAttribute(
-				"fromAttackSimulator",
-				true);
+        // =====================================================
+        // 8. 認証状態の確認ログ
+        // =====================================================
 
-		// =====================================================
-		// /homeへ
-		// =====================================================
+        System.out.println("===== AttackLogin 認証確認 =====");
 
-		return "redirect:/home";
-	}
+        System.out.println(
+                "認証ユーザー: " + authentication.getName()
+        );
+
+        System.out.println(
+                "認証状態: " + authentication.isAuthenticated()
+        );
+
+        System.out.println(
+                "権限: " + authentication.getAuthorities()
+        );
+
+        System.out.println(
+                "セッションID: " + session.getId()
+        );
+
+        System.out.println(
+                "SecurityContext保存: "
+                + (session.getAttribute(
+                        HttpSessionSecurityContextRepository
+                                .SPRING_SECURITY_CONTEXT_KEY) != null)
+        );
+
+        System.out.println("================================");
+
+        // =====================================================
+        // 9. ホーム画面へ遷移
+        // =====================================================
+
+        return "redirect:/home";
+    }
 }

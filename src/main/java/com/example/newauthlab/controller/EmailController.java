@@ -1,7 +1,6 @@
 package com.example.newauthlab.controller;
 
 import java.util.Optional;
-import java.util.Random;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -64,66 +63,77 @@ public class EmailController {
 	// OTPを送信
 	// =========================================================
 
+	// =========================================================
+	// OTPを送信
+	// =========================================================
+
 	@PostMapping("/send-otp")
 	public String sendOtp(
-			@RequestParam("email") String email,
-			@RequestParam(
-					value = "fromAttackSimulator",
-					required = false)
-			String fromAttackSimulator,
-			HttpSession session) {
+	        @RequestParam("email") String email,
+	        @RequestParam(
+	                value = "fromAttackSimulator",
+	                required = false)
+	        String fromAttackSimulator,
+	        HttpSession session) {
 
-		///=========================================
-		/// 有効期限の設定＿なぎ
-		/// =========================================
-		 verificationCodeService.clearTimeOut(session); 
-		
-		
-		// =====================================================
-		// 6桁のランダムなOTPを作成
-		// =====================================================
+	    System.out.println("===== OTP発行開始 =====");
+	    System.out.println("Session ID = " + session.getId());
+	    System.out.println("送信先Email = " + email);
 
-		String otp =
-				String.format(
-						"%06d",
-						new Random().nextInt(1000000));
+	    // =====================================================
+	    // 6桁のOTP生成
+	    // =====================================================
 
-		// =====================================================
-		// セッションに保存
-		// =====================================================
+	    String otp =
+	            String.format(
+	                    "%06d",
+	                    new java.security.SecureRandom()
+	                            .nextInt(1000000));
 
-		session.setAttribute(
-				"otp",
-				otp);
+	    // =====================================================
+	    // VerificationCodeServiceにOTPと期限を保存
+	    // =====================================================
 
-		session.setAttribute(
-				"email",
-				email);
+	    verificationCodeService.saveCode(
+	            session,
+	            email,
+	            otp);
 
-		// =====================================================
-		// attacksimulatorから来たことを記録
-		// =====================================================
+	    // EmailController側でもメールアドレスを保持
+	    session.setAttribute(
+	            "email",
+	            email);
 
-		if ("true".equals(fromAttackSimulator)) {
+	    // =====================================================
+	    // AttackSimulatorから来たことを記録
+	    // =====================================================
 
-			session.setAttribute(
-					"fromAttackSimulator",
-					true);
-		} else {
+	    if ("true".equals(fromAttackSimulator)) {
 
-			session.removeAttribute(
-					"fromAttackSimulator");
-		}
+	        session.setAttribute(
+	                "fromAttackSimulator",
+	                true);
 
-		// =====================================================
-		// メール送信
-		// =====================================================
+	    } else {
 
-		emailService.sendOtp(
-				email,
-				otp);
+	        session.removeAttribute(
+	                "fromAttackSimulator");
+	    }
 
-		return "otp";
+	    // =====================================================
+	    // メール送信
+	    // =====================================================
+
+	    emailService.sendOtp(
+	            email,
+	            otp);
+
+	    System.out.println("OTP保存完了");
+	    System.out.println("OTP送信完了");
+	    System.out.println("Session ID = " + session.getId());
+	    System.out.println("========================");
+
+	    return "otp";
 	}
 
 	// =========================================================
@@ -141,134 +151,116 @@ public class EmailController {
 
 	@PostMapping("/verify-otp")
 	public String verifyOtp(
-			@RequestParam("otp") String otp,
-			HttpSession session,
-			HttpServletRequest request,
-			HttpServletResponse response,
-			Model model) {
+	        @RequestParam("otp") String otp,
+	        HttpSession session,
+	        HttpServletRequest request,
+	        HttpServletResponse response,
+	        Model model) {
 
-		// =====================================================
-		// セッションからOTP取得
-		// =====================================================
+	    // =====================================================
+	    // OTP確認
+	    // =====================================================
 
-		String savedOtp =
-				(String) session.getAttribute("otp");
+	    boolean verified =
+	            verificationCodeService.verifyCode(
+	                    session,
+	                    otp);
 
-		// =====================================================
-		// OTP不正
-		// =====================================================
+	    if (!verified) {
 
-		if (savedOtp == null
-				|| !savedOtp.equals(otp)) {
+	        model.addAttribute(
+	                "error",
+	                "認証コードが正しくないか、有効期限が切れています");
 
-			model.addAttribute(
-					"error",
-					"認証コードが正しくありません");
+	        return "otp";
+	    }
 
-			return "otp";
-		}
+	    // =====================================================
+	    // メールアドレス取得
+	    // =====================================================
 
-		// =====================================================
-		// OTP削除
-		// =====================================================
+	    String email =
+	            (String) session.getAttribute("email");
 
-		session.removeAttribute("otp");
+	    if (email == null || email.isBlank()) {
 
-		// =====================================================
-		// メールアドレス取得
-		// =====================================================
+	        verificationCodeService.clearCode(session);
 
-		String email =
-				(String) session.getAttribute("email");
+	        model.addAttribute(
+	                "error",
+	                "メールアドレスが確認できません");
 
-		if (email == null
-				|| email.isBlank()) {
+	        return "otp";
+	    }
 
-			model.addAttribute(
-					"error",
-					"メールアドレスが確認できません");
+	    // =====================================================
+	    // User取得
+	    // =====================================================
 
-			return "otp";
-		}
+	    Optional<User> optionalUser =
+	            userRepository.findByEmail(email);
 
-		// =====================================================
-		// User取得
-		// =====================================================
+	    if (optionalUser.isEmpty()) {
 
-		Optional<User> optionalUser =
-				userRepository.findByEmail(email);
+	        verificationCodeService.clearCode(session);
 
-		if (optionalUser.isEmpty()) {
+	        model.addAttribute(
+	                "error",
+	                "ユーザーが見つかりません");
 
-			model.addAttribute(
-					"error",
-					"ユーザーが見つかりません");
+	        return "otp";
+	    }
 
-			return "otp";
-		}
+	    User user = optionalUser.get();
 
-		User user =
-				optionalUser.get();
+	    // =====================================================
+	    // AttackSimulator経由か確認
+	    // =====================================================
 
-		// =====================================================
-		// attacksimulator経由か確認
-		// =====================================================
+	    boolean fromAttackSimulator =
+	            Boolean.TRUE.equals(
+	                    session.getAttribute(
+	                            "fromAttackSimulator"));
 
-		boolean fromAttackSimulator =
-				Boolean.TRUE.equals(
-						session.getAttribute(
-								"fromAttackSimulator"));
+	    // =====================================================
+	    // OTP削除
+	    // =====================================================
 
-		// =====================================================
-		// attacksimulator経由
-		// =====================================================
+	    verificationCodeService.clearCode(session);
 
-		if (fromAttackSimulator) {
+	    // =====================================================
+	    // AttackSimulator経由
+	    // =====================================================
 
-			/*
-			 * ここではまだ通常のブラウザセッションへ
-			 * 直接ログインさせない。
-			 *
-			 * 一時チケットを作成して、
-			 * ブラウザ側の /attack-login に渡す。
-			 */
+	    if (fromAttackSimulator) {
 
-			String ticket =
-					attackLoginTicketService
-					.createTicket(
-							user.getUsername());
+	        String ticket =
+	                attackLoginTicketService.createTicket(
+	                        user.getUsername());
 
-			/*
-			 * 使用済みの目印を削除
-			 */
-			session.removeAttribute(
-					"fromAttackSimulator");
+	        session.removeAttribute(
+	                "fromAttackSimulator");
 
-			session.removeAttribute(
-					"email");
+	        session.removeAttribute(
+	                "email");
 
-			/*
-			 * attacksimulatorのHttpClientが
-			 * このリダイレクト先を取得し、
-			 * ブラウザをここへ移動させる。
-			 */
-			return "redirect:/attack-login?ticket="
-			+ ticket;
-		}
+	        return "redirect:/attack-login?ticket="
+	                + ticket;
+	    }
 
-		// =====================================================
-		// 通常のEmail OTPログイン
-		// =====================================================
+	    // =====================================================
+	    // 通常のEmail OTPログイン
+	    // =====================================================
 
-		loginSuccess(
-				user,
-				request,
-				response);
+	    loginSuccess(
+	            user,
+	            request,
+	            response);
 
-		session.removeAttribute(
-				"email");
+	    session.removeAttribute(
+	            "email");
 
-		return "redirect:/home";
+	    return "redirect:/home";
 	}
 
 	// =========================================================
