@@ -26,6 +26,11 @@ public class VerificationCodeService {
     // OTPの有効期限（分）
     public int timeout = 5;
 
+    // OTP有効期限を取得
+    public int getTimeout() {
+        return timeout;
+    }
+
     // =====================================================
     // 認証コードを保存
     // =====================================================
@@ -133,15 +138,16 @@ public class VerificationCodeService {
         session.removeAttribute(EXPIRES_AT_KEY);
 
         LocalDateTime expiresAt =
-            LocalDateTime.now().plusMinutes(timeout);
+                LocalDateTime.now().plusMinutes(timeout);
 
-        session.setAttribute(EXPIRES_AT_KEY, expiresAt);
+        session.setAttribute(
+                EXPIRES_AT_KEY,
+                expiresAt);
 
         System.out.println("===== OTP有効期限設定 =====");
         System.out.println("設定時刻 = " + LocalDateTime.now());
         System.out.println("有効期限 = " + expiresAt);
         System.out.println("設定時間 = " + timeout + "分");
-        System.out.println("==========================");
     }
 
     // =====================================================
