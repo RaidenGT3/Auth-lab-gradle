@@ -1392,6 +1392,8 @@ public class AuthController {
 
 	    session.removeAttribute("twoFactorUsername");
 	    session.removeAttribute("fromAttackSimulator");
+	    session.removeAttribute("email");
+	    session.removeAttribute("username");
 
 	    // =========================================
 	    // AttackSimulatorへ成功通知
