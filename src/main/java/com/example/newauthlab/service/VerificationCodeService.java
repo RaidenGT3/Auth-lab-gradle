@@ -22,9 +22,9 @@ public class VerificationCodeService {
     // 有効期限のキー
     private static final String EXPIRES_AT_KEY =
             "twoStageVerificationExpiresAt";
-
+    
     // OTPの有効期限（分）
-    public int timeout = 5;
+    public int timeout = 999;
 
     // OTP有効期限を取得
     public int getTimeout() {
