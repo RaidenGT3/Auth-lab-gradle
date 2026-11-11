@@ -28,8 +28,6 @@ import com.example.newauthlab.entity.User;
 import com.example.newauthlab.repository.UserRepository;
 import com.example.newauthlab.service.AttackLoginTicketService;
 import com.example.newauthlab.service.MailService;
-import com.example.newauthlab.service.QrCodeService;
-import com.example.newauthlab.service.TotpService;
 import com.example.newauthlab.service.VerificationCodeService;
 
 @Controller
@@ -39,8 +37,6 @@ public class AuthController {
 	private final PasswordEncoder passwordEncoder;
 	private final MailService mailService;
 	private final VerificationCodeService verificationCodeService;
-	private final TotpService totpService;
-	private final QrCodeService qrCodeService;
 	private final AttackLoginTicketService attackLoginTicketService;
 
 	private int missloginCount = 0;//ログイン失敗回数
@@ -59,16 +55,12 @@ public class AuthController {
 			PasswordEncoder passwordEncoder,
 			MailService mailService,
 			VerificationCodeService verificationCodeService,
-			TotpService totpService,
-			QrCodeService qrCodeService,
 			AttackLoginTicketService attackLoginTicketService) {
 
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.mailService = mailService;
 		this.verificationCodeService = verificationCodeService;
-		this.totpService = totpService;
-		this.qrCodeService = qrCodeService;
 		this.attackLoginTicketService = attackLoginTicketService;
 	}
 
@@ -1579,73 +1571,6 @@ public class AuthController {
 		}
 		return false;
 	}
-	
-	// =========================================================
-	// ユーザー登録
-	// =========================================================
-
-	//    @PostMapping("/register")
-	//    public String registerUser(
-	//            @RequestParam String username,
-	//            @RequestParam String password,
-	//            @RequestParam String password2,
-	//            @RequestParam String password3,
-	//            @RequestParam String email,
-	//            HttpSession session,
-	//            Model model) {
-	//
-	//        // ユーザー名重複確認
-	//        if (userRepository.existsByUsername(username)) {
-	//
-	//            model.addAttribute(
-	//                    "error",
-	//                    "そのユーザー名はすでに使用されています");
-	//
-	//            return "register";
-	//        }
-	//
-	////        // メールアドレス重複確認
-	////        if (userRepository.existsByEmail(email)) {
-	////
-	////            model.addAttribute(
-	////                    "error",
-	////                    "そのメールアドレスはすでに使用されています");
-	////
-	////            return "register";
-	////        }
-	//
-	//        // ユーザー作成
-	//        User user = new User();
-	//
-	//        user.setUsername(username);
-	//
-	//        user.setPassword(
-	//                passwordEncoder.encode(password));
-	//
-	//        user.setPassword2(
-	//                passwordEncoder.encode(password2));
-	//
-	//        user.setPassword3(
-	//                passwordEncoder.encode(password3));
-	//
-	//        user.setEmail(email);
-	//
-	//        // TOTP秘密鍵生成
-	//        String secretKey =
-	//                totpService.generateSecretKey();
-	//
-	//        user.setTotpSecret(secretKey);
-	//
-	//        // DB保存
-	//        userRepository.save(user);
-	//
-	//        // TOTP登録用ユーザー名を保存
-	//        session.setAttribute(
-	//                "totpRegisterUsername",
-	//                username);
-	//
-	//        return "redirect:/register/totp";
-	//    }
 
 	// =========================================================
 	// ユーザー登録
@@ -1702,217 +1627,7 @@ public class AuthController {
 
 		return "redirect:/auth";
 	}
-
-
-	// =========================================================
-	// Google Authenticator登録画面
-	// =========================================================
-
-	//    @GetMapping("/register/totp")
-	//    public String registerTotp(
-	//            HttpSession session,
-	//            Model model) {
-	//
-	//        Object usernameObject =
-	//                session.getAttribute(
-	//                        "totpRegisterUsername");
-	//
-	//        if (usernameObject == null) {
-	//            return "redirect:/register";
-	//        }
-	//
-	//        String username =
-	//                usernameObject.toString();
-	//
-	//        Optional<User> optionalUser =
-	//                userRepository.findByUsername(username);
-	//
-	//        if (optionalUser.isEmpty()) {
-	//            return "redirect:/register";
-	//        }
-	//
-	//        User user = optionalUser.get();
-	//
-	//        String secretKey =
-	//                user.getTotpSecret();
-	//
-	//        String qrCodeUrl =
-	//                totpService.generateQrCodeUrl(
-	//                        "NewAuthLab",
-	//                        user.getUsername(),
-	//                        secretKey);
-	//
-	//        model.addAttribute(
-	//                "username",
-	//                user.getUsername());
-	//
-	//        model.addAttribute(
-	//                "secretKey",
-	//                secretKey);
-	//
-	//        model.addAttribute(
-	//                "qrCodeUrl",
-	//                qrCodeUrl);
-	//
-	//        return "register/totp";
-	//    }
-
-
-	// =========================================================
-	// Google Authenticator登録確認
-	// =========================================================
-
-	//    @PostMapping("/register/totp/verify")
-	//    public String verifyRegisterTotp(
-	//            @RequestParam String code,
-	//            HttpSession session,
-	//            Model model) {
-	//
-	//        Object usernameObject =
-	//                session.getAttribute(
-	//                        "totpRegisterUsername");
-	//
-	//        if (usernameObject == null) {
-	//
-	//            model.addAttribute(
-	//                    "error",
-	//                    "登録情報が見つかりません。もう一度登録してください");
-	//
-	//            return "redirect:/register";
-	//        }
-	//
-	//        String username =
-	//                usernameObject.toString();
-	//
-	//        Optional<User> optionalUser =
-	//                userRepository.findByUsername(username);
-	//
-	//        if (optionalUser.isEmpty()) {
-	//
-	//            model.addAttribute(
-	//                    "error",
-	//                    "ユーザーが見つかりません");
-	//
-	//            return "redirect:/register";
-	//        }
-	//
-	//        User user = optionalUser.get();
-	//
-	//        int totpCode;
-	//
-	//        try {
-	//
-	//            totpCode =
-	//                    Integer.parseInt(code);
-	//
-	//        } catch (NumberFormatException e) {
-	//
-	//            model.addAttribute(
-	//                    "error",
-	//                    "認証コードは数字6桁で入力してください");
-	//
-	//            return "register-totp";
-	//        }
-	//
-	//        boolean verified =
-	//                totpService.verifyCode(
-	//                        user.getTotpSecret(),
-	//                        totpCode);
-	//
-	//        if (!verified) {
-	//
-	//            model.addAttribute(
-	//                    "error",
-	//                    "認証コードが正しくありません");
-	//
-	//            return "register-totp";
-	//        }
-	//
-	//        // TOTP登録完了
-	//        session.removeAttribute(
-	//                "totpRegisterUsername");
-	//
-	//        return "redirect:/auth";
-	//    }
-
-
-	// =========================================================
-	// Google Authenticator確認画面
-	// =========================================================
-
-	//    @GetMapping("/register/totp/verify")
-	//    public String registerTotpVerifyPage() {
-	//        return "register-totp";
-	//    }
-
-
-	// =========================================================
-	// TOTP QRコード
-	// =========================================================
-
-	//    @GetMapping("/register/totp/qr")
-	//    public ResponseEntity<byte[]> registerTotpQr(
-	//            HttpSession session) {
-	//
-	//        Object usernameObject =
-	//                session.getAttribute(
-	//                        "totpRegisterUsername");
-	//
-	//        if (usernameObject == null) {
-	//            return ResponseEntity.notFound().build();
-	//        }
-	//
-	//        String username =
-	//                usernameObject.toString();
-	//
-	//        Optional<User> optionalUser =
-	//                userRepository.findByUsername(username);
-	//
-	//        if (optionalUser.isEmpty()) {
-	//            return ResponseEntity.notFound().build();
-	//        }
-	//
-	//        User user = optionalUser.get();
-	//
-	//        String secretKey =
-	//                user.getTotpSecret();
-	//
-	//        if (secretKey == null ||
-	//                secretKey.isBlank()) {
-	//
-	//            return ResponseEntity.notFound().build();
-	//        }
-	//
-	//        String qrCodeUrl =
-	//                totpService.generateQrCodeUrl(
-	//                        "NewAuthLab",
-	//                        user.getUsername(),
-	//                        secretKey);
-	//
-	//        try {
-	//
-	//            byte[] qrCodeImage =
-	//                    qrCodeService.generateQrCode(
-	//                            qrCodeUrl,
-	//                            300,
-	//                            300);
-	//
-	//            return ResponseEntity
-	//                    .ok()
-	//                    .contentType(MediaType.IMAGE_PNG)
-	//                    .body(qrCodeImage);
-	//
-	//        } catch (WriterException | IOException e) {
-	//
-	//            return ResponseEntity
-	//                    .internalServerError()
-	//                    .build();
-	//        }
-	//    }
 	
-	// =========================================================
-	// 有効期限が切れているかの確認＿なぎ
-	// =========================================================
 	// =========================================================
 	// OTP有効期限チェック
 	// =========================================================
