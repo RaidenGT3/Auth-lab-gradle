@@ -11,24 +11,24 @@ import org.springframework.web.client.RestClient;
 @Service
 public class VerificationCodeService {
 
-    // セッションに保存する認証コードのキー
-    private static final String CODE_KEY =
-            "twoStageVerificationCode";
+	// セッションに保存する認証コードのキー
+	private static final String CODE_KEY =
+			"twoStageVerificationCode";
 
+	// セッションに保存するメールアドレスのキー
+	private static final String EMAIL_KEY =
+			"twoStageVerificationEmail";
+	//セッションに保存する有効期限のキー＿なぎ
+	private static final String EXPIRES_AT_KEY =
+	        "twoStageVerificationExpiresAt";
+	
+	public int timeout = 9999;//タイムアウトの分数を設定する＿なぎ
 
-    // メールアドレスのキー
-    private static final String EMAIL_KEY =
-            "twoStageVerificationEmail";
-    // 有効期限のキー
-    private static final String EXPIRES_AT_KEY =
-            "twoStageVerificationExpiresAt";
+	
+	// =========================
+	// 認証コードを保存
+	// =========================
 
-    // OTPの有効期限（分）
-    public int timeout = 999;
-
-    // =====================================================
-    // 認証コードを保存
-    // =====================================================
 
     public void saveCode(HttpSession session, String email, String code) {
 
