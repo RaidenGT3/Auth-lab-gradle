@@ -24,7 +24,7 @@ public class VerificationCodeService {
             "twoStageVerificationExpiresAt";
 
     // OTPの有効期限（分）
-    public int timeout = 5;
+    public int timeout = 999;
 
     // =====================================================
     // 認証コードを保存
