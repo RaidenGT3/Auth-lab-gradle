@@ -42,11 +42,11 @@ public class AuthController {
 	private int missloginCount = 0;//ログイン失敗回数
 	private int missLimit = 1;//ログイン失敗回数の上限
 	private int limitCount = 0;//ログイン失敗回数の上限を超えた回数
-	
+
 	private int[] penalty_Time = new int[] {30,60,-1};//ログイン失敗回数の上限を超えた場合の待機時間（秒）
-													  //-1の場合は永久ロック
+	//-1の場合は永久ロック
 	private boolean now_Lock = false;//今アカウントがロックされているかどうか
-	
+
 	private final SecurityContextRepository securityContextRepository =
 			new HttpSessionSecurityContextRepository();
 
@@ -92,7 +92,7 @@ public class AuthController {
 	@PostMapping("/auth/select")
 	public String selectAuth(
 			@RequestParam String authType) {
-		
+
 		//認証ペナルティをリセット
 		now_Lock = false;
 		missloginCount = 0;//失敗回数をリセット
@@ -100,15 +100,15 @@ public class AuthController {
 		switch (authType) {
 
 		case "one-stage":
-			 
+
 			return "redirect:/login/one-stage";
 
 		case "two-stage":
-		
+
 			return "redirect:/login/two-stage";
 
 		case "three-stage":
-		
+
 			return "redirect:/login/three-stage";
 
 		case "one-factor":
@@ -171,8 +171,8 @@ public class AuthController {
 			model.addAttribute(
 					"error",
 					"ユーザー名またはパスワードが正しくありません");
-			 Misslogin();//失敗回数カウントなど
-			 return "login/one-stage";
+			Misslogin();//失敗回数カウントなど
+			return "login/one-stage";
 		}
 
 		loginSuccess(user, request, response);
@@ -803,7 +803,7 @@ public class AuthController {
 		return "login/one-factor-email";
 	}
 
-	
+
 	@PostMapping("/login/one-factor/email")
 	public String oneFactorEmailLogin(
 			@RequestParam String username,
@@ -946,7 +946,7 @@ public class AuthController {
 
 		return "redirect:/home";
 	}
-	
+
 	// =========================================================
 	// AttackSimulator用
 	// 一要素認証 - Email OTP確認
@@ -955,56 +955,56 @@ public class AuthController {
 	@PostMapping("verify-one-factor-attack-otp")
 	@ResponseBody
 	public String verifyOneFactorAttackOtp(
-	        @RequestParam String otp,
-	        HttpServletRequest request) {
+			@RequestParam String otp,
+			HttpServletRequest request) {
 
-	    HttpSession session = request.getSession(false);
+		HttpSession session = request.getSession(false);
 
-	    if (session == null) {
-	        return "OTP_FAILED";
-	    }
+		if (session == null) {
+			return "OTP_FAILED";
+		}
 
-	    Object usernameObject =
-	            session.getAttribute("oneFactorEmailUsername");
+		Object usernameObject =
+				session.getAttribute("oneFactorEmailUsername");
 
-	    if (usernameObject == null) {
-	        return "OTP_FAILED";
-	    }
+		if (usernameObject == null) {
+			return "OTP_FAILED";
+		}
 
-	    Object attackSimulatorObject =
-	            session.getAttribute("fromAttackSimulator");
+		Object attackSimulatorObject =
+				session.getAttribute("fromAttackSimulator");
 
-	    if (!Boolean.TRUE.equals(attackSimulatorObject)) {
-	        return "OTP_FAILED";
-	    }
+		if (!Boolean.TRUE.equals(attackSimulatorObject)) {
+			return "OTP_FAILED";
+		}
 
-	    String username = usernameObject.toString();
+		String username = usernameObject.toString();
 
-	    boolean verified =
-	            verificationCodeService.verifyCode(
-	                    session,
-	                    otp);
+		boolean verified =
+				verificationCodeService.verifyCode(
+						session,
+						otp);
 
-	    if (!verified) {
-	        return "OTP_FAILED";
-	    }
+		if (!verified) {
+			return "OTP_FAILED";
+		}
 
-	    Optional<User> optionalUser =
-	            userRepository.findByUsername(username);
+		Optional<User> optionalUser =
+				userRepository.findByUsername(username);
 
-	    if (optionalUser.isEmpty()) {
-	        return "OTP_FAILED";
-	    }
+		if (optionalUser.isEmpty()) {
+			return "OTP_FAILED";
+		}
 
-	    String ticket =
-	            attackLoginTicketService.createTicket(username);
+		String ticket =
+				attackLoginTicketService.createTicket(username);
 
-	    verificationCodeService.clearCode(session);
+		verificationCodeService.clearCode(session);
 
-	    session.removeAttribute("oneFactorEmailUsername");
-	    session.removeAttribute("fromAttackSimulator");
+		session.removeAttribute("oneFactorEmailUsername");
+		session.removeAttribute("fromAttackSimulator");
 
-	    return "LOGIN_SUCCESS:" + ticket;
+		return "LOGIN_SUCCESS:" + ticket;
 	}
 
 
@@ -1030,7 +1030,7 @@ public class AuthController {
 
 
 	@PostMapping("/login/two-factor/password")
-//	@ResponseBody		//どうする
+	//	@ResponseBody		//どうする
 	public String twoFactorPassword(
 			@RequestParam String username,
 			@RequestParam String password,
@@ -1179,7 +1179,7 @@ public class AuthController {
 			// HTTPレスポンスとして文字列を返す
 			// =================================================
 
-				 return "redirect:/attack/otp-sent";
+			return "redirect:/attack/otp-sent";
 			//return "OTP_SENT";
 		}
 
@@ -1205,10 +1205,10 @@ public class AuthController {
 	@GetMapping("/attack/otp-sent")
 	@ResponseBody
 	public String attackOtpSent() {
-	    return "OTP_SENT";
+		return "OTP_SENT";
 	}
-	
-	
+
+
 	// =========================================================
 	// 二要素認証 第2段階 Email OTP送信
 	// =========================================================
@@ -1369,91 +1369,7 @@ public class AuthController {
 				"twoFactorUsername");
 
 		return "redirect:/home";
-	}
-
-	// =========================================================
-	// AttackSimulator用
-	// 二要素認証 Email OTP確認
-	// =========================================================
-
-//	@PostMapping("/login/two-factor/verify-otp")
-//	@ResponseBody
-//	public String verifyTwoFactorAttackOtp(
-//	        @RequestParam String otp,
-//	        HttpServletRequest request,
-//	        HttpServletResponse response) {
-//
-//	    HttpSession session = request.getSession(false);
-//
-//	    if (session == null) {
-//	        return "OTP_FAILED";
-//	    }
-//
-//	    // =========================================
-//	    // 二要素認証対象ユーザー取得
-//	    // =========================================
-//	    Object usernameObject =
-//	            session.getAttribute("twoFactorUsername");
-//
-//	    if (usernameObject == null) {
-//	        return "OTP_FAILED";
-//	    }
-//
-//	    String username =
-//	            usernameObject.toString();
-//
-//	    // =========================================
-//	    // AttackSimulatorからの認証か確認
-//	    // =========================================
-//	    Object attackSimulatorObject =
-//	            session.getAttribute("fromAttackSimulator");
-//
-//	    if (!Boolean.TRUE.equals(attackSimulatorObject)) {
-//	        return "OTP_FAILED";
-//	    }
-//
-//	    // =========================================
-//	    // 保存されているOTPを取得
-//	    // =========================================
-//	    String savedCode =
-//	            verificationCodeService.getCode(session);
-//
-//	    if (savedCode == null) {
-//	        return "OTP_FAILED";
-//	    }
-//
-//	    // =========================================
-//	    // OTP確認
-//	    // =========================================
-//	    boolean verified =
-//	            verificationCodeService.verifyCode(
-//	                    session,
-//	                    otp);
-//
-//	    if (!verified) {
-//	        return "OTP_FAILED";
-//	    }
-//
-//	    // =========================================
-//	    // AttackSimulator用ログインチケット発行
-//	    // =========================================
-//	    String ticket =
-//	            attackLoginTicketService.createTicket(username);
-//
-//	    // =========================================
-//	    // OTP・認証情報を削除
-//	    // =========================================
-//	    verificationCodeService.clearCode(session);
-//
-//	    session.removeAttribute("twoFactorUsername");
-//	    session.removeAttribute("fromAttackSimulator");
-//
-//	    // =========================================
-//	    // AttackSimulatorへ成功通知
-//	    // =========================================
-//	    return "redirect:/attack-login?ticket=" + ticket;
-//	}
-	
+	}	
 
 	// =========================================================
 	// AttackSimulator用
@@ -1462,69 +1378,69 @@ public class AuthController {
 
 	@PostMapping("/login/two-factor/verify-otp")
 	public ResponseEntity<Void> verifyTwoFactorAttackOtp(
-	        @RequestParam String otp,
-	        HttpServletRequest request) {
+			@RequestParam String otp,
+			HttpServletRequest request) {
 
-	    HttpSession session = request.getSession(false);
+		HttpSession session = request.getSession(false);
 
-	    if (session == null) {
-	        return ResponseEntity.ok().build();
-	    }
+		if (session == null) {
+			return ResponseEntity.ok().build();
+		}
 
-	    // 二要素認証対象ユーザー取得
-	    Object usernameObject =
-	            session.getAttribute("twoFactorUsername");
+		// 二要素認証対象ユーザー取得
+		Object usernameObject =
+				session.getAttribute("twoFactorUsername");
 
-	    if (usernameObject == null) {
-	        return ResponseEntity.ok().build();
-	    }
+		if (usernameObject == null) {
+			return ResponseEntity.ok().build();
+		}
 
-	    String username = usernameObject.toString();
+		String username = usernameObject.toString();
 
-	    // AttackSimulatorからの認証か確認
-	    Object attackSimulatorObject =
-	            session.getAttribute("fromAttackSimulator");
+		// AttackSimulatorからの認証か確認
+		Object attackSimulatorObject =
+				session.getAttribute("fromAttackSimulator");
 
-	    if (!Boolean.TRUE.equals(attackSimulatorObject)) {
-	        return ResponseEntity.ok().build();
-	    }
+		if (!Boolean.TRUE.equals(attackSimulatorObject)) {
+			return ResponseEntity.ok().build();
+		}
 
-	    // 保存されているOTPを取得
-	    String savedCode =
-	            verificationCodeService.getCode(session);
+		// 保存されているOTPを取得
+		String savedCode =
+				verificationCodeService.getCode(session);
 
-	    if (savedCode == null) {
-	        return ResponseEntity.ok().build();
-	    }
+		if (savedCode == null) {
+			return ResponseEntity.ok().build();
+		}
 
-	    // OTP確認
-	    boolean verified =
-	            verificationCodeService.verifyCode(
-	                    session,
-	                    otp);
+		// OTP確認
+		boolean verified =
+				verificationCodeService.verifyCode(
+						session,
+						otp);
 
-	    if (!verified) {
-	        return ResponseEntity.ok().build();
-	    }
+		if (!verified) {
+			return ResponseEntity.ok().build();
+		}
 
-	    // ログインチケット発行
-	    String ticket =
-	            attackLoginTicketService.createTicket(username);
+		// ログインチケット発行
+		String ticket =
+				attackLoginTicketService.createTicket(username);
 
-	    // OTP・認証情報を削除
-	    verificationCodeService.clearCode(session);
+		// OTP・認証情報を削除
+		verificationCodeService.clearCode(session);
 
-	    session.removeAttribute("twoFactorUsername");
-	    session.removeAttribute("fromAttackSimulator");
+		session.removeAttribute("twoFactorUsername");
+		session.removeAttribute("fromAttackSimulator");
 
-	    // HTTP 302リダイレクトを明示的に返す
-	    URI redirectUri = URI.create(
-	            "/attack-login?ticket=" + ticket);
+		// HTTP 302リダイレクトを明示的に返す
+		URI redirectUri = URI.create(
+				"/attack-login?ticket=" + ticket);
 
-	    return ResponseEntity
-	            .status(HttpStatus.FOUND)
-	            .location(redirectUri)
-	            .build();
+		return ResponseEntity
+				.status(HttpStatus.FOUND)
+				.location(redirectUri)
+				.build();
 	}
 
 
@@ -1551,13 +1467,13 @@ public class AuthController {
 	// =========================================================
 	private boolean Misslogin() {
 		missloginCount++;//失敗回数をカウント
-		
+
 		if(missLimit <= missloginCount) {//失敗回数が一定数達したら
-		
+
 			if(penalty_Time.length > limitCount) {//範囲外対策
 				limitCount++;//ペナルティレベルを上げる
 			}
-			
+
 			if(penalty_Time[limitCount-1] == -1) {//ペナルティ待機時間が-1なら永久ロック
 				now_Lock = true;
 				System.out.println("アカウントが永久ロックされました");
@@ -1627,7 +1543,7 @@ public class AuthController {
 
 		return "redirect:/auth";
 	}
-	
+
 	// =========================================================
 	// OTP有効期限チェック
 	// =========================================================
@@ -1635,75 +1551,75 @@ public class AuthController {
 	@GetMapping("/attack/check-otp-expiration")
 	@ResponseBody
 	public ResponseEntity<String> checkCodeExpiration(
-	        HttpSession session) {
+			HttpSession session) {
 
-	    System.out.println("===== OTP期限確認API =====");
-	    System.out.println("Session ID = " + session.getId());
+		System.out.println("===== OTP期限確認API =====");
+		System.out.println("Session ID = " + session.getId());
 
-	    boolean expired =
-	            verificationCodeService.isOtpExpired(session);
+		boolean expired =
+				verificationCodeService.isOtpExpired(session);
 
-	    if (expired) {
+		if (expired) {
 
-	        System.out.println("判定結果 = EXPIRED");
+			System.out.println("判定結果 = EXPIRED");
 
-	        return ResponseEntity.ok("EXPIRED");
-	    }
+			return ResponseEntity.ok("EXPIRED");
+		}
 
-	    System.out.println("判定結果 = ACTIVE");
+		System.out.println("判定結果 = ACTIVE");
 
-	    return ResponseEntity.ok("ACTIVE");
+		return ResponseEntity.ok("ACTIVE");
 	}
-	
 
 
-private void loginSuccess(
-        User user,
-        HttpServletRequest request,
-        HttpServletResponse response) {
 
-    // =================================================
-    // Authentication作成
-    // =================================================
+	private void loginSuccess(
+			User user,
+			HttpServletRequest request,
+			HttpServletResponse response) {
 
-    Authentication authentication =
-            new UsernamePasswordAuthenticationToken(
-                    user.getUsername(),
-                    null,
-                    Collections.singletonList(
-                            new org.springframework.security.core.authority.SimpleGrantedAuthority(
-                                    "ROLE_USER"
-                            )
-                    )
-            );
+		// =================================================
+		// Authentication作成
+		// =================================================
 
-    // =================================================
-    // SecurityContext作成
-    // =================================================
+		Authentication authentication =
+				new UsernamePasswordAuthenticationToken(
+						user.getUsername(),
+						null,
+						Collections.singletonList(
+								new org.springframework.security.core.authority.SimpleGrantedAuthority(
+										"ROLE_USER"
+										)
+								)
+						);
 
-    SecurityContext context =
-            SecurityContextHolder.createEmptyContext();
+		// =================================================
+		// SecurityContext作成
+		// =================================================
 
-    context.setAuthentication(authentication);
+		SecurityContext context =
+				SecurityContextHolder.createEmptyContext();
 
-    SecurityContextHolder.setContext(context);
+		context.setAuthentication(authentication);
 
-    // =================================================
-    // セッションへ保存
-    // =================================================
+		SecurityContextHolder.setContext(context);
 
-    securityContextRepository.saveContext(
-            context,
-            request,
-            response
-    );
+		// =================================================
+		// セッションへ保存
+		// =================================================
 
-    System.out.println("===== ログイン成功 =====");
-    System.out.println("ユーザー: " + user.getUsername());
-    System.out.println("認証状態: " + authentication.isAuthenticated());
-    System.out.println("権限: " + authentication.getAuthorities());
-    System.out.println("========================");
-}
+		securityContextRepository.saveContext(
+				context,
+				request,
+				response
+				);
+
+		System.out.println("===== ログイン成功 =====");
+		System.out.println("ユーザー: " + user.getUsername());
+		System.out.println("認証状態: " + authentication.isAuthenticated());
+		System.out.println("権限: " + authentication.getAuthorities());
+		System.out.println("========================");
+	}
 
 
 	@PostMapping("/logout-from-attacksimulator")

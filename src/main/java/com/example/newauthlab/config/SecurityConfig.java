@@ -11,89 +11,89 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-    // =================================================
-    // PasswordEncoder
-    // =================================================
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	// =================================================
+	// PasswordEncoder
+	// =================================================
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    // =================================================
-    // SecurityFilterChain
-    // =================================================
-    @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
+	// =================================================
+	// SecurityFilterChain
+	// =================================================
+	@Bean
+	public SecurityFilterChain securityFilterChain(
+			HttpSecurity http) throws Exception {
 
-        http
+		http
 
-        // =================================================
-        // CSRF
-        // =================================================
-        .csrf(csrf -> csrf.disable())
+		// =================================================
+		// CSRF
+		// =================================================
+		.csrf(csrf -> csrf.disable())
 
-        // =================================================
-        // 認証・認可
-        // =================================================
-        .authorizeHttpRequests(auth -> auth
+		// =================================================
+		// 認証・認可
+		// =================================================
+		.authorizeHttpRequests(auth -> auth
 
-            // -------------------------------------------------
-            // 認証不要
-            // -------------------------------------------------
-            .requestMatchers(
+				// -------------------------------------------------
+				// 認証不要
+				// -------------------------------------------------
+				.requestMatchers(
 
-                // トップページ
-                "/",
+						// トップページ
+						"/",
 
-                // 認証方式選択
-                "/auth",
-                "/auth/select",
+						// 認証方式選択
+						"/auth",
+						"/auth/select",
 
-                // ログイン関連
-                "/login/**",
+						// ログイン関連
+						"/login/**",
 
-                // ユーザー登録
-                "/register",
-                "/register/totp",
-                "/register/totp/verify",
-                "/register/totp/qr",
+						// ユーザー登録
+						"/register",
+						"/register/totp",
+						"/register/totp/verify",
+						"/register/totp/qr",
 
-                // Email OTP
-                "/email",
-                "/otp",
-                "/send-otp",
-                "/verify-otp",
-                "/success",
+						// Email OTP
+						"/email",
+						"/otp",
+						"/send-otp",
+						"/verify-otp",
+						"/success",
 
-                // AttackSimulatorからのログイン引き継ぎ
-                "/attack-login",
+						// AttackSimulatorからのログイン引き継ぎ
+						"/attack-login",
 
-                // OTP有効期限確認
-                "/attack/check-otp-expiration",
+						// OTP有効期限確認
+						"/attack/check-otp-expiration",
 
-                // CSS
-                "/css/**",
+						// CSS
+						"/css/**",
 
-                // JavaScript
-                "/js/**"
+						// JavaScript
+						"/js/**"
 
-            ).permitAll()
+						).permitAll()
 
-            // -------------------------------------------------
-            // その他のページは認証必須
-            // -------------------------------------------------
-            .anyRequest().authenticated()
-        )
+				// -------------------------------------------------
+				// その他のページは認証必須
+				// -------------------------------------------------
+				.anyRequest().authenticated()
+				)
 
-        // =================================================
-        // ログアウト
-        // =================================================
-        .logout(logout -> logout
-            .logoutSuccessUrl("/auth")
-            .permitAll()
-        );
+		// =================================================
+		// ログアウト
+		// =================================================
+		.logout(logout -> logout
+				.logoutSuccessUrl("/auth")
+				.permitAll()
+				);
 
-        return http.build();
-    }
+		return http.build();
+	}
 }

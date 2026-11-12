@@ -23,340 +23,340 @@ import com.example.newauthlab.service.VerificationCodeService;
 @Controller
 public class EmailController {
 
-    private final EmailService emailService;
+	private final EmailService emailService;
 
-    private final UserRepository userRepository;
+	private final UserRepository userRepository;
 
-    private final AttackLoginTicketService attackLoginTicketService;
+	private final AttackLoginTicketService attackLoginTicketService;
 
-    private final VerificationCodeService verificationCodeService;
+	private final VerificationCodeService verificationCodeService;
 
-    private final MailService mailService;
+	private final MailService mailService;
 
-    // =========================================================
-    // コンストラクタ
-    // =========================================================
+	// =========================================================
+	// コンストラクタ
+	// =========================================================
 
-    public EmailController(
-            EmailService emailService,
-            UserRepository userRepository,
-            AttackLoginTicketService attackLoginTicketService,
-            VerificationCodeService verificationCodeService,
-            MailService mailService) {
+	public EmailController(
+			EmailService emailService,
+			UserRepository userRepository,
+			AttackLoginTicketService attackLoginTicketService,
+			VerificationCodeService verificationCodeService,
+			MailService mailService) {
 
-        this.emailService = emailService;
-        this.userRepository = userRepository;
-        this.attackLoginTicketService = attackLoginTicketService;
-        this.verificationCodeService = verificationCodeService;
-        this.mailService = mailService;
-    }
+		this.emailService = emailService;
+		this.userRepository = userRepository;
+		this.attackLoginTicketService = attackLoginTicketService;
+		this.verificationCodeService = verificationCodeService;
+		this.mailService = mailService;
+	}
 
-    // =========================================================
-    // ユーザー名入力画面
-    // =========================================================
+	// =========================================================
+	// ユーザー名入力画面
+	// =========================================================
 
-    @GetMapping("/email")
-    public String email() {
+	@GetMapping("/email")
+	public String email() {
 
-        return "email";
-    }
+		return "email";
+	}
 
-    // =========================================================
-    // OTP送信
-    // =========================================================
+	// =========================================================
+	// OTP送信
+	// =========================================================
 
-    @PostMapping("/send-otp")
-    public String sendOtp(
-            @RequestParam("username") String username,
-            @RequestParam(
-                    value = "fromAttackSimulator",
-                    required = false)
-            String fromAttackSimulator,
-            HttpSession session,
-            Model model) {
+	@PostMapping("/send-otp")
+	public String sendOtp(
+			@RequestParam("username") String username,
+			@RequestParam(
+					value = "fromAttackSimulator",
+					required = false)
+			String fromAttackSimulator,
+			HttpSession session,
+			Model model) {
 
-        System.out.println("===== OTP発行開始 =====");
-        System.out.println("Session ID = " + session.getId());
-        System.out.println("Username = " + username);
+		System.out.println("===== OTP発行開始 =====");
+		System.out.println("Session ID = " + session.getId());
+		System.out.println("Username = " + username);
 
-        // =====================================================
-        // usernameでユーザーを検索
-        // =====================================================
+		// =====================================================
+		// usernameでユーザーを検索
+		// =====================================================
 
-        Optional<User> optionalUser =
-                userRepository.findByUsername(username);
+		Optional<User> optionalUser =
+				userRepository.findByUsername(username);
 
-        if (optionalUser.isEmpty()) {
+		if (optionalUser.isEmpty()) {
 
-            model.addAttribute(
-                    "error",
-                    "ユーザーが見つかりません");
+			model.addAttribute(
+					"error",
+					"ユーザーが見つかりません");
 
-            return "email";
-        }
+			return "email";
+		}
 
-        User user = optionalUser.get();
+		User user = optionalUser.get();
 
-        // =====================================================
-        // 登録メールアドレス取得
-        // メール送信先としてのみ使用
-        // =====================================================
+		// =====================================================
+		// 登録メールアドレス取得
+		// メール送信先としてのみ使用
+		// =====================================================
 
-        String email = user.getEmail();
+		String email = user.getEmail();
 
-        if (email == null || email.isBlank()) {
+		if (email == null || email.isBlank()) {
 
-            model.addAttribute(
-                    "error",
-                    "登録されているメールアドレスがありません");
+			model.addAttribute(
+					"error",
+					"登録されているメールアドレスがありません");
 
-            return "email";
-        }
+			return "email";
+		}
 
-        // =====================================================
-        // OTP生成
-        // =====================================================
+		// =====================================================
+		// OTP生成
+		// =====================================================
 
-        String otp = mailService.generateCode();
+		String otp = mailService.generateCode();
 
-        // =====================================================
-        // OTPと有効期限をセッションに保存
-        // =====================================================
+		// =====================================================
+		// OTPと有効期限をセッションに保存
+		// =====================================================
 
-        verificationCodeService.saveCode(
-                session,
-                email,
-                otp);
+		verificationCodeService.saveCode(
+				session,
+				email,
+				otp);
 
-        // =====================================================
-        // usernameをセッションに保存
-        // =====================================================
+		// =====================================================
+		// usernameをセッションに保存
+		// =====================================================
 
-        session.setAttribute(
-                "emailOtpUsername",
-                user.getUsername());
+		session.setAttribute(
+				"emailOtpUsername",
+				user.getUsername());
 
-        // =====================================================
-        // AttackSimulator経由か確認
-        // =====================================================
+		// =====================================================
+		// AttackSimulator経由か確認
+		// =====================================================
 
-        if ("true".equals(fromAttackSimulator)) {
+		if ("true".equals(fromAttackSimulator)) {
 
-            session.setAttribute(
-                    "fromAttackSimulator",
-                    true);
+			session.setAttribute(
+					"fromAttackSimulator",
+					true);
 
-        } else {
+		} else {
 
-            session.removeAttribute(
-                    "fromAttackSimulator");
-        }
+			session.removeAttribute(
+					"fromAttackSimulator");
+		}
 
-        // =====================================================
-        // メール送信
-        // =====================================================
+		// =====================================================
+		// メール送信
+		// =====================================================
 
-        emailService.sendOtp(
-                email,
-                otp);
+		emailService.sendOtp(
+				email,
+				otp);
 
-        System.out.println("===== OTP送信完了 =====");
-        System.out.println("Username = " + username);
-        System.out.println("送信先Email = " + email);
-        System.out.println("Session ID = " + session.getId());
+		System.out.println("===== OTP送信完了 =====");
+		System.out.println("Username = " + username);
+		System.out.println("送信先Email = " + email);
+		System.out.println("Session ID = " + session.getId());
 
-        return "otp";
-    }
+		return "otp";
+	}
 
-    // =========================================================
-    // OTP入力画面
-    // =========================================================
+	// =========================================================
+	// OTP入力画面
+	// =========================================================
 
-    @GetMapping("/otp")
-    public String otp() {
+	@GetMapping("/otp")
+	public String otp() {
 
-        return "otp";
-    }
+		return "otp";
+	}
 
-    // =========================================================
-    // OTP確認
-    // =========================================================
+	// =========================================================
+	// OTP確認
+	// =========================================================
 
-    @PostMapping("/verify-otp")
-    public String verifyOtp(
-            @RequestParam("otp") String otp,
-            HttpSession session,
-            HttpServletRequest request,
-            HttpServletResponse response,
-            Model model) {
+	@PostMapping("/verify-otp")
+	public String verifyOtp(
+			@RequestParam("otp") String otp,
+			HttpSession session,
+			HttpServletRequest request,
+			HttpServletResponse response,
+			Model model) {
 
-        // =====================================================
-        // OTP確認
-        // =====================================================
+		// =====================================================
+		// OTP確認
+		// =====================================================
 
-        boolean verified =
-                verificationCodeService.verifyCode(
-                        session,
-                        otp);
+		boolean verified =
+				verificationCodeService.verifyCode(
+						session,
+						otp);
 
-        if (!verified) {
+		if (!verified) {
 
-            model.addAttribute(
-                    "error",
-                    "認証コードが正しくないか、有効期限が切れています");
+			model.addAttribute(
+					"error",
+					"認証コードが正しくないか、有効期限が切れています");
 
-            return "otp";
-        }
+			return "otp";
+		}
 
-        // =====================================================
-        // username取得
-        // =====================================================
+		// =====================================================
+		// username取得
+		// =====================================================
 
-        String username =
-                (String) session.getAttribute(
-                        "emailOtpUsername");
+		String username =
+				(String) session.getAttribute(
+						"emailOtpUsername");
 
-        if (username == null || username.isBlank()) {
+		if (username == null || username.isBlank()) {
 
-            verificationCodeService.clearCode(session);
+			verificationCodeService.clearCode(session);
 
-            model.addAttribute(
-                    "error",
-                    "ユーザー情報を確認できません");
+			model.addAttribute(
+					"error",
+					"ユーザー情報を確認できません");
 
-            return "otp";
-        }
+			return "otp";
+		}
 
-        // =====================================================
-        // usernameでユーザーを検索
-        // =====================================================
+		// =====================================================
+		// usernameでユーザーを検索
+		// =====================================================
 
-        Optional<User> optionalUser =
-                userRepository.findByUsername(username);
+		Optional<User> optionalUser =
+				userRepository.findByUsername(username);
 
-        if (optionalUser.isEmpty()) {
+		if (optionalUser.isEmpty()) {
 
-            verificationCodeService.clearCode(session);
+			verificationCodeService.clearCode(session);
 
-            session.removeAttribute("emailOtpUsername");
-            session.removeAttribute("email");
+			session.removeAttribute("emailOtpUsername");
+			session.removeAttribute("email");
 
-            model.addAttribute(
-                    "error",
-                    "ユーザーが見つかりません");
+			model.addAttribute(
+					"error",
+					"ユーザーが見つかりません");
 
-            return "otp";
-        }
+			return "otp";
+		}
 
-        User user = optionalUser.get();
+		User user = optionalUser.get();
 
-        // =====================================================
-        // AttackSimulator経由か確認
-        // =====================================================
+		// =====================================================
+		// AttackSimulator経由か確認
+		// =====================================================
 
-        boolean fromAttackSimulator =
-                Boolean.TRUE.equals(
-                        session.getAttribute(
-                                "fromAttackSimulator"));
+		boolean fromAttackSimulator =
+				Boolean.TRUE.equals(
+						session.getAttribute(
+								"fromAttackSimulator"));
 
-        // =====================================================
-        // OTP削除
-        // =====================================================
+		// =====================================================
+		// OTP削除
+		// =====================================================
 
-        verificationCodeService.clearCode(session);
+		verificationCodeService.clearCode(session);
 
-        // =====================================================
-        // AttackSimulator経由
-        // =====================================================
+		// =====================================================
+		// AttackSimulator経由
+		// =====================================================
 
-        if (fromAttackSimulator) {
+		if (fromAttackSimulator) {
 
-            String ticket =
-                    attackLoginTicketService.createTicket(
-                            user.getUsername());
+			String ticket =
+					attackLoginTicketService.createTicket(
+							user.getUsername());
 
-            session.removeAttribute(
-                    "fromAttackSimulator");
+			session.removeAttribute(
+					"fromAttackSimulator");
 
-            session.removeAttribute(
-                    "email");
+			session.removeAttribute(
+					"email");
 
-            session.removeAttribute(
-                    "emailOtpUsername");
+			session.removeAttribute(
+					"emailOtpUsername");
 
-            return "redirect:/attack-login?ticket="
-                    + ticket;
-        }
+			return "redirect:/attack-login?ticket="
+			+ ticket;
+		}
 
-        // =====================================================
-        // 通常のEmail OTPログイン
-        // =====================================================
+		// =====================================================
+		// 通常のEmail OTPログイン
+		// =====================================================
 
-        loginSuccess(
-                user,
-                request,
-                response);
+		loginSuccess(
+				user,
+				request,
+				response);
 
-        // =====================================================
-        // セッション情報削除
-        // =====================================================
+		// =====================================================
+		// セッション情報削除
+		// =====================================================
 
-        session.removeAttribute("email");
-        session.removeAttribute("emailOtpUsername");
-        session.removeAttribute("fromAttackSimulator");
+		session.removeAttribute("email");
+		session.removeAttribute("emailOtpUsername");
+		session.removeAttribute("fromAttackSimulator");
 
-        return "redirect:/home";
-    }
+		return "redirect:/home";
+	}
 
-    // =========================================================
-    // 認証成功処理
-    // =========================================================
+	// =========================================================
+	// 認証成功処理
+	// =========================================================
 
-    private void loginSuccess(
-            User user,
-            HttpServletRequest request,
-            HttpServletResponse response) {
+	private void loginSuccess(
+			User user,
+			HttpServletRequest request,
+			HttpServletResponse response) {
 
-        org.springframework.security.core.Authentication authentication =
-                new org.springframework.security.authentication
-                        .UsernamePasswordAuthenticationToken(
-                                user.getUsername(),
-                                null,
-                                java.util.List.of(
-                                        new org.springframework.security
-                                                .core.authority
-                                                .SimpleGrantedAuthority(
-                                                        "ROLE_USER")));
+		org.springframework.security.core.Authentication authentication =
+				new org.springframework.security.authentication
+				.UsernamePasswordAuthenticationToken(
+						user.getUsername(),
+						null,
+						java.util.List.of(
+								new org.springframework.security
+								.core.authority
+								.SimpleGrantedAuthority(
+										"ROLE_USER")));
 
-        org.springframework.security.core.context.SecurityContext securityContext =
-                org.springframework.security.core.context
-                        .SecurityContextHolder
-                        .createEmptyContext();
+		org.springframework.security.core.context.SecurityContext securityContext =
+				org.springframework.security.core.context
+				.SecurityContextHolder
+				.createEmptyContext();
 
-        securityContext.setAuthentication(authentication);
+		securityContext.setAuthentication(authentication);
 
-        org.springframework.security.core.context
-                .SecurityContextHolder
-                .setContext(securityContext);
+		org.springframework.security.core.context
+		.SecurityContextHolder
+		.setContext(securityContext);
 
-        org.springframework.security.web.context
-                .HttpSessionSecurityContextRepository securityContextRepository =
-                new org.springframework.security.web.context
-                        .HttpSessionSecurityContextRepository();
+		org.springframework.security.web.context
+		.HttpSessionSecurityContextRepository securityContextRepository =
+		new org.springframework.security.web.context
+		.HttpSessionSecurityContextRepository();
 
-        securityContextRepository.saveContext(
-                securityContext,
-                request,
-                response);
-    }
+		securityContextRepository.saveContext(
+				securityContext,
+				request,
+				response);
+	}
 
-    // =========================================================
-    // 認証成功画面
-    // =========================================================
+	// =========================================================
+	// 認証成功画面
+	// =========================================================
 
-    @GetMapping("/success")
-    public String success() {
+	@GetMapping("/success")
+	public String success() {
 
-        return "index";
-    }
+		return "index";
+	}
 }

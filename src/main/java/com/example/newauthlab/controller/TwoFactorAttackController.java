@@ -272,7 +272,7 @@ public class TwoFactorAttackController {
 		System.out.println("① OTP照合成功。チケット発行開始");
 
 		String ticket =
-		        attackLoginTicketService.createTicket(username);
+				attackLoginTicketService.createTicket(username);
 
 		System.out.println("② チケット発行完了");
 		System.out.println("ticket = " + ticket);
@@ -295,9 +295,9 @@ public class TwoFactorAttackController {
 		System.out.println("④ HTTP 302を返します");
 
 		return ResponseEntity
-		        .status(HttpStatus.FOUND)
-		        .location(
-		                URI.create("/attack-login?ticket=" + ticket))
-		        .build();
+				.status(HttpStatus.FOUND)
+				.location(
+						URI.create("/attack-login?ticket=" + ticket))
+				.build();
 	}
 }
