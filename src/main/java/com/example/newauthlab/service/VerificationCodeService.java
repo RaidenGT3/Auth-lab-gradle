@@ -24,7 +24,7 @@ public class VerificationCodeService {
 			"twoStageVerificationExpiresAt";
 
 	// OTPの有効期限（分）
-	public int timeout = 120;
+	public int timeout = 5;
 
 	// OTP有効期限を取得
 	public int getTimeout() {
