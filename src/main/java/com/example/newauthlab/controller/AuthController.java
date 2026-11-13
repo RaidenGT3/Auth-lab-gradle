@@ -28,8 +28,6 @@ import com.example.newauthlab.entity.User;
 import com.example.newauthlab.repository.UserRepository;
 import com.example.newauthlab.service.AttackLoginTicketService;
 import com.example.newauthlab.service.MailService;
-import com.example.newauthlab.service.QrCodeService;
-import com.example.newauthlab.service.TotpService;
 import com.example.newauthlab.service.VerificationCodeService;
 
 @Controller
@@ -39,8 +37,6 @@ public class AuthController {
 	private final PasswordEncoder passwordEncoder;
 	private final MailService mailService;
 	private final VerificationCodeService verificationCodeService;
-	private final TotpService totpService;
-	private final QrCodeService qrCodeService;
 	private final AttackLoginTicketService attackLoginTicketService;
 
 	private int missloginCount = 0;//ログイン失敗回数
@@ -59,16 +55,12 @@ public class AuthController {
 			PasswordEncoder passwordEncoder,
 			MailService mailService,
 			VerificationCodeService verificationCodeService,
-			TotpService totpService,
-			QrCodeService qrCodeService,
 			AttackLoginTicketService attackLoginTicketService) {
 
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.mailService = mailService;
 		this.verificationCodeService = verificationCodeService;
-		this.totpService = totpService;
-		this.qrCodeService = qrCodeService;
 		this.attackLoginTicketService = attackLoginTicketService;
 	}
 
