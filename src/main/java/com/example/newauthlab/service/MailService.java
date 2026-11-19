@@ -13,7 +13,11 @@ public class MailService {
     private final JavaMailSender mailSender;
 
     private final VerificationCodeService verificationCodeService;
-
+/**
+ * localhost:8080用のmailSender
+ * @param mailSender
+ * @param verificationCodeService
+ */
     public MailService(
             JavaMailSender mailSender,
             VerificationCodeService verificationCodeService) {
